@@ -22,8 +22,9 @@ import java.io.File
 import java.util.Calendar
 import java.util.Locale
 
-class MediaFetcher(val context: Context) {
+class MediaFetcher(val context: Context, private val applyHiddenFilter: Boolean = true) {
     var shouldStop = false
+    private val hiddenMediaFilter = context.getHiddenMediaFilter()
 
     // on Android 11 we fetch all files at once from MediaStore and have it split by folder, use it if available
     fun getFilesFrom(
@@ -75,6 +76,10 @@ class MediaFetcher(val context: Context) {
                 }
                 curMedia.addAll(newMedia)
             }
+        }
+
+        if (applyHiddenFilter) {
+            curMedia.removeAll { !hiddenMediaFilter.matches(it.path) }
         }
 
         sortMedia(curMedia, context.config.getFolderSorting(curPath))

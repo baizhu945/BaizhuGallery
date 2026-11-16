@@ -104,6 +104,7 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getFavoritePaths
+import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.hideSystemUI
@@ -150,6 +151,7 @@ import org.fossify.gallery.helpers.FadePageTransformer
 import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
 import org.fossify.gallery.helpers.GO_TO_PREV_ITEM
 import org.fossify.gallery.helpers.HIDE_SYSTEM_UI_DELAY
+import org.fossify.gallery.helpers.HiddenMediaFilter
 import org.fossify.gallery.helpers.IS_VIEW_INTENT
 import org.fossify.gallery.helpers.MAX_PRINT_SIDE_SIZE
 import org.fossify.gallery.helpers.PATH
@@ -231,7 +233,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         refreshMenuItems()
 
         window.decorView.setBackgroundColor(getProperBackgroundColor())
-        (MediaActivity.mMedia.clone() as ArrayList<ThumbnailItem>).filterIsInstanceTo(mMediaFiles, Medium::class.java)
+        val hiddenFilter = getHiddenMediaFilter()
+        mMediaFiles = MediaActivity.mMedia.filterIsInstance<Medium>()
+            .filterTo(ArrayList()) { hiddenFilter.matches(it.path) }
 
         requestMediaPermissions {
             initViewPager(
@@ -247,6 +251,21 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         if (!hasPermission(getPermissionToRequest())) {
             finish()
             return
+        }
+
+        val hiddenFilter = getHiddenMediaFilter()
+        val hasFilteredMedia = mMediaFiles.any { !matchesViewerFilter(it.path, hiddenFilter) } ||
+            getCurrentMedia().any { !matchesViewerFilter(it.path, hiddenFilter) }
+        if (mPath.isNotEmpty() && config.filterHiddenOnly && hasFilteredMedia) {
+            stopSlideshow()
+            mRandomSlideshowStopped = false
+            mPrevHashcode = 0
+            gotMedia(
+                mMediaFiles as ArrayList<ThumbnailItem>, ignorePlayingVideos = true, refetchViewPagerPosition = true
+            )
+            if (isFinishing) {
+                return
+            }
         }
 
         initBottomActions()
@@ -472,8 +491,16 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initContinue() {
+        if (!matchesViewerFilter(mPath)) {
+            mMediaFiles.clear()
+            finish()
+            return
+        }
+        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+            mMediaFiles = mMediaFiles.filterTo(ArrayList()) { it.path == mPath }
+        }
         if (intent.extras?.containsKey(IS_VIEW_INTENT) == true) {
-            if (isShowHiddenFlagNeeded()) {
+            if (!config.filterHiddenOnly && isShowHiddenFlagNeeded()) {
                 if (!config.isHiddenPasswordProtectionOn) {
                     config.temporarilyShowHidden = true
                 }
@@ -501,7 +528,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
 
         // show the selected image asap, while loading the rest in the background to allow swiping between them. Might be needed at third party intents
-        if (mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES) {
+        val canShowSelectedPath = mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES
+        if (canShowSelectedPath && matchesViewerFilter(mPath)) {
             val filename = mPath.getFilenameFromPath()
             val folder = mPath.getParentPath()
             val type = getTypeFromPath(mPath)
@@ -813,6 +841,14 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
             refreshMenuItems()
             callback?.invoke()
+            if (config.filterHiddenOnly && !matchesViewerFilter(it)) {
+                stopSlideshow()
+                mRandomSlideshowStopped = false
+                mPrevHashcode = 0
+                gotMedia(
+                    mMediaFiles as ArrayList<ThumbnailItem>, ignorePlayingVideos = true, refetchViewPagerPosition = true
+                )
+            }
         }
     }
 
@@ -1280,7 +1316,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private fun isDirEmpty(media: ArrayList<Medium>): Boolean {
         return if (media.isEmpty()) {
-            deleteDirectoryIfEmpty()
+            mMediaFiles.clear()
+            mSlideshowMedia.clear()
+            if (!config.filterHiddenOnly) {
+                deleteDirectoryIfEmpty()
+            }
             finish()
             true
         } else {
@@ -1316,18 +1356,38 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
     }
 
+    private fun hiddenFilterState() = Triple(
+        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
+    )
+
+    private fun matchesViewerFilter(path: String, hiddenFilter: HiddenMediaFilter = getHiddenMediaFilter()): Boolean {
+        // An explicit external view is limited to its requested target, never its siblings.
+        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+            return path == mPath
+        }
+        return hiddenFilter.matches(path)
+    }
+
     private fun refreshViewPager(refetchPosition: Boolean = false) {
+        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+            gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = refetchPosition)
+            return
+        }
+        val filterState = hiddenFilterState()
         val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
         if (!isRandomSorting || isExternalIntent()) {
             GetMediaAsynctask(applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll) {
-                gotMedia(it, refetchViewPagerPosition = refetchPosition)
+                if (filterState == hiddenFilterState()) {
+                    gotMedia(it, refetchViewPagerPosition = refetchPosition)
+                }
             }.execute()
         }
     }
 
     private fun gotMedia(thumbnailItems: ArrayList<ThumbnailItem>, ignorePlayingVideos: Boolean = false, refetchViewPagerPosition: Boolean = false) {
+        val hiddenFilter = getHiddenMediaFilter()
         val media = thumbnailItems.asSequence().filter {
-            it is Medium && !mIgnoredPaths.contains(it.path)
+            it is Medium && !mIgnoredPaths.contains(it.path) && matchesViewerFilter(it.path, hiddenFilter)
         }.map { it as Medium }.toMutableList() as ArrayList<Medium>
 
         if (isDirEmpty(media) || media.hashCode() == mPrevHashcode) {
@@ -1335,7 +1395,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
 
         val isPlaying = (getCurrentFragment() as? VideoFragment)?.mIsPlaying == true
-        if (!ignorePlayingVideos && isPlaying && !isExternalIntent()) {
+        val hasFilteredCurrentMedia = getCurrentMedia().any { !matchesViewerFilter(it.path, hiddenFilter) }
+        val canKeepPlaying = !ignorePlayingVideos && isPlaying && !isExternalIntent()
+        if (!hasFilteredCurrentMedia && canKeepPlaying) {
             return
         }
 
@@ -1343,14 +1405,21 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun refreshUI(media: ArrayList<Medium>, refetchViewPagerPosition: Boolean) {
-        mPrevHashcode = media.hashCode()
-        mMediaFiles = media
+        val hiddenFilter = getHiddenMediaFilter()
+        val visible = media.filterTo(ArrayList()) { matchesViewerFilter(it.path, hiddenFilter) }
+        if (isDirEmpty(visible)) {
+            return
+        }
+        mPrevHashcode = visible.hashCode()
+        mMediaFiles = visible
+        if (config.filterHiddenOnly) {
+            mSlideshowMedia = mSlideshowMedia.filter { matchesViewerFilter(it.path, hiddenFilter) }.toMutableList()
+        }
 
-        if (refetchViewPagerPosition || mPos == -1) {
-            mPos = getPositionInList(media)
-            if (mPos == -1) {
-                min(mPos, media.lastIndex)
-            }
+        mPos = if (refetchViewPagerPosition || mPos == -1) {
+            getPositionInList(visible).coerceIn(0, visible.lastIndex)
+        } else {
+            mPos.coerceIn(0, visible.lastIndex)
         }
 
         updateActionbarTitle()

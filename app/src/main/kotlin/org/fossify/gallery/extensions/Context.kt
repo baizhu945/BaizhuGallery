@@ -47,6 +47,7 @@ import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.extensions.humanizePath
 import org.fossify.commons.extensions.internalStoragePath
+import org.fossify.commons.extensions.isExternalStorageManager
 import org.fossify.commons.extensions.isGif
 import org.fossify.commons.extensions.isPathOnOTG
 import org.fossify.commons.extensions.isPathOnSD
@@ -75,6 +76,7 @@ import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.commons.helpers.SORT_DESCENDING
 import org.fossify.commons.helpers.SORT_USE_NUMERIC_VALUE
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.helpers.sumByLong
 import org.fossify.commons.views.MySquareImageView
 import org.fossify.gallery.R
@@ -85,6 +87,7 @@ import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_DAILY
 import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_MONTHLY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_DAILY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_MONTHLY
+import org.fossify.gallery.helpers.HiddenMediaFilter
 import org.fossify.gallery.helpers.IsoTypeReader
 import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.LOCATION_OTG
@@ -130,6 +133,19 @@ fun Context.getHumanizedFilename(path: String): String {
 }
 
 val Context.config: Config get() = Config.newInstance(applicationContext)
+
+fun Context.getHiddenMediaFilter(): HiddenMediaFilter {
+    val config = config
+    val binPath = recycleBinPath.trimEnd('/')
+    return HiddenMediaFilter(
+        onlyHidden = config.filterHiddenOnly,
+        hiddenAccessAllowed = config.shouldShowHidden && (!isRPlus() || isExternalStorageManager()),
+        hasNoMedia = { directory -> getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath) },
+        originalPath = { path ->
+            if (path.startsWith("$binPath/")) path.removePrefix(binPath) else path
+        }
+    )
+}
 
 val Context.widgetsDB: WidgetsDao
     get() = GalleryDatabase.getInstance(applicationContext).WidgetsDao()
@@ -539,7 +555,8 @@ fun Context.rescanFolderMediaSync(path: String) {
             mPath = path,
             isPickImage = false,
             isPickVideo = false,
-            showAll = false
+            showAll = false,
+            applyHiddenFilter = false
         ) { newMedia ->
             ensureBackgroundThread {
                 val media = newMedia.filterIsInstance<Medium>() as ArrayList<Medium>
@@ -919,6 +936,66 @@ fun Context.getCachedDirectories(
     }
 }
 
+fun Context.getCachedMediaDirectories(
+    getVideosOnly: Boolean = false,
+    getImagesOnly: Boolean = false,
+    callback: (ArrayList<Directory>) -> Unit
+) {
+    getCachedDirectories(getVideosOnly, getImagesOnly) { directories ->
+        if (!config.filterHiddenOnly) {
+            callback(directories)
+            return@getCachedDirectories
+        }
+
+        val hiddenMediaFilter = getHiddenMediaFilter()
+        val albumCovers = config.parseAlbumCovers()
+        val includedFolders = config.includedFolders
+        val noMediaFolders = getNoMediaFoldersSync()
+        val filterMedia = config.filterMedia
+        val matchingDirectories = directories.mapNotNull { directory ->
+            val matchingMedia = getCachedDirectoryMedia(directory).filterTo(ArrayList()) {
+                val matchesType = it.matchesMediaTypeFilter(getVideosOnly, getImagesOnly, filterMedia)
+                hiddenMediaFilter.matches(it.path) && matchesType
+            }
+
+            if (matchingMedia.isEmpty()) {
+                null
+            } else {
+                createDirectoryFromMedia(
+                    path = directory.path,
+                    curMedia = matchingMedia,
+                    albumCovers = albumCovers,
+                    hiddenString = getString(R.string.hidden),
+                    includedFolders = includedFolders,
+                    getProperFileSize = config.directorySorting and SORT_BY_SIZE != 0,
+                    noMediaFolders = noMediaFolders
+                )
+            }
+        }.toCollection(ArrayList())
+        callback(matchingDirectories)
+    }
+}
+
+private fun Context.getCachedDirectoryMedia(directory: Directory): List<Medium> {
+    return try {
+        when {
+            directory.areFavorites() -> mediaDB.getFavorites()
+            directory.isRecycleBin() -> getUpdatedDeletedMedia()
+            else -> mediaDB.getMediaFromPath(directory.path)
+        }
+    } catch (ignored: Exception) {
+        emptyList()
+    }
+}
+
+private fun Medium.matchesMediaTypeFilter(getVideosOnly: Boolean, getImagesOnly: Boolean, filterMedia: Int): Boolean {
+    return when {
+        getVideosOnly -> type == TYPE_VIDEOS
+        getImagesOnly -> type == TYPE_IMAGES
+        else -> filterMedia and type != 0
+    }
+}
+
 fun Context.getCachedMedia(
     path: String,
     getVideosOnly: Boolean = false,
@@ -979,6 +1056,9 @@ fun Context.getCachedMedia(
                         || (filterMedia and TYPE_PORTRAITS != 0 && it.type == TYPE_PORTRAITS)
             }
         }) as ArrayList<Medium>
+
+        val hiddenMediaFilter = getHiddenMediaFilter()
+        media = media.filterTo(ArrayList()) { hiddenMediaFilter.matches(it.path) }
 
         val pathToUse = path.ifEmpty { SHOW_ALL }
         mediaFetcher.sortMedia(media, config.getFolderSorting(pathToUse))
@@ -1242,13 +1322,7 @@ fun Context.createDirectoryFromMedia(
 ): Directory {
     val OTGPath = config.OTGPath
     val grouped = MediaFetcher(this).groupMedia(curMedia, path)
-    var thumbnail: String? = null
-
-    albumCovers.forEach {
-        if (it.path == path && getDoesFilePathExist(it.tmb, OTGPath)) {
-            thumbnail = it.tmb
-        }
-    }
+    var thumbnail = getAlbumCover(path, albumCovers, curMedia)
 
     if (thumbnail == null) {
         val sortedMedia = grouped.filter { it is Medium }.toMutableList() as ArrayList<Medium>
@@ -1295,6 +1369,15 @@ fun Context.createDirectoryFromMedia(
     )
 }
 
+private fun Context.getAlbumCover(path: String, albumCovers: ArrayList<AlbumCover>, media: ArrayList<Medium>): String? {
+    val OTGPath = config.OTGPath
+    val onlyHidden = config.filterHiddenOnly
+    return albumCovers.lastOrNull { cover ->
+        val matchesFilter = !onlyHidden || media.any { it.path == cover.tmb }
+        cover.path == path && getDoesFilePathExist(cover.tmb, OTGPath) && matchesFilter
+    }?.tmb
+}
+
 fun Context.getDirectorySortingValue(
     media: ArrayList<Medium>,
     path: String,
@@ -1329,7 +1412,7 @@ fun Context.getDirectorySortingValue(
 }
 
 fun Context.updateDirectoryPath(path: String) {
-    val mediaFetcher = MediaFetcher(applicationContext)
+    val mediaFetcher = MediaFetcher(applicationContext, applyHiddenFilter = false)
     val getImagesOnly = false
     val getVideosOnly = false
     val hiddenString = getString(R.string.hidden)

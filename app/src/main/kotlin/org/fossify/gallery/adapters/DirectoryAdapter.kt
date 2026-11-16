@@ -79,6 +79,7 @@ import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
+import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.isThisOrParentFolderHidden
 import org.fossify.gallery.extensions.loadImage
@@ -178,6 +179,10 @@ class DirectoryAdapter(
             findItem(R.id.cab_move_to_top).isVisible = isDragAndDropping
             findItem(R.id.cab_move_to_bottom).isVisible = isDragAndDropping
 
+            findItem(R.id.cab_delete).apply {
+                isVisible = canDeleteSelection(selectedPaths)
+                isEnabled = isVisible
+            }
             findItem(R.id.cab_rename).isVisible = !selectedPaths.contains(FAVORITES) && !selectedPaths.contains(RECYCLE_BIN)
             findItem(R.id.cab_change_cover_image).isVisible = isOneItemSelected
 
@@ -436,6 +441,10 @@ class DirectoryAdapter(
     }
 
     private fun updateFolderNames() {
+        if (config.filterHiddenOnly) {
+            listener?.refreshItems()
+            return
+        }
         val includedFolders = config.includedFolders
         val hidden = activity.getString(R.string.hidden)
         dirs.forEach {
@@ -589,11 +598,13 @@ class DirectoryAdapter(
     private fun copyMoveTo(selectedPaths: Collection<String>, isCopyOperation: Boolean) {
         val paths = ArrayList<String>()
         val showHidden = config.shouldShowHidden
+        val hiddenFilter = activity.getHiddenMediaFilter()
         selectedPaths.forEach {
             val filter = config.filterMedia
             File(it).listFiles()?.filter {
                 !File(it.absolutePath).isDirectory &&
-                    it.absolutePath.isMediaFile() && (showHidden || !it.name.startsWith('.')) &&
+                    it.absolutePath.isMediaFile() && hiddenFilter.matches(it.absolutePath) &&
+                    (showHidden || !it.name.startsWith('.')) &&
                     ((it.isImageFast() && filter and TYPE_IMAGES != 0) ||
                         (it.isVideoFast() && filter and TYPE_VIDEOS != 0) ||
                         (it.isGif() && filter and TYPE_GIFS != 0) ||
@@ -648,7 +659,14 @@ class DirectoryAdapter(
         }
     }
 
+    private fun canDeleteSelection(paths: Collection<String>): Boolean {
+        return !config.filterHiddenOnly || paths.none { it == FAVORITES || it == RECYCLE_BIN }
+    }
+
     private fun askConfirmDelete() {
+        if (!canDeleteSelection(getSelectedPaths())) {
+            return
+        }
         when {
             config.isDeletePasswordProtectionOn -> activity.handleDeletePasswordProtection {
                 deleteFolders()
@@ -694,19 +712,20 @@ class DirectoryAdapter(
     }
 
     private fun deleteFolders() {
-        if (selectedKeys.isEmpty()) {
+        if (selectedKeys.isEmpty() || !canDeleteSelection(getSelectedPaths())) {
             return
         }
 
         val SAFPath = getFirstSelectedItemPath() ?: return
         val selectedDirs = getSelectedItems()
+        val selectedPaths = selectedDirs.map { it.path }
         activity.handleSAFDialog(SAFPath) {
             if (!it) {
                 return@handleSAFDialog
             }
 
             activity.handleSAFDialogSdk30(SAFPath) {
-                if (!it) {
+                if (!it || !canDeleteSelection(selectedPaths)) {
                     return@handleSAFDialogSdk30
                 }
 
@@ -717,9 +736,11 @@ class DirectoryAdapter(
                             tryEmptyRecycleBin(false)
                         } else {
                             ensureBackgroundThread {
-                                activity.mediaDB.clearFavorites()
-                                activity.favoritesDB.clearFavorites()
-                                listener?.refreshItems()
+                                if (canDeleteSelection(selectedPaths)) {
+                                    activity.mediaDB.clearFavorites()
+                                    activity.favoritesDB.clearFavorites()
+                                    listener?.refreshItems()
+                                }
                             }
                         }
 

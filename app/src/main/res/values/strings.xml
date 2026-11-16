@@ -42,6 +42,7 @@
 
     <!-- Filter -->
     <string name="filter_media">Filter media</string>
+    <string name="show_only_hidden_items">Hidden only</string>
     <string name="images">Images</string>
     <string name="videos">Videos</string>
     <string name="gifs">GIFs</string>

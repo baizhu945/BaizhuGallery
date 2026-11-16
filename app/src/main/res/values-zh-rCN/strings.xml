@@ -34,6 +34,7 @@
     <string name="reorder_by_dragging_pro">通过拖动重新排列文件夹 (专业版)</string>
     <string name="restore_to_path">恢复至“%s”</string>
     <string name="filter_media">过滤显示的文件</string>
+    <string name="show_only_hidden_items">仅显示隐藏的项目</string>
     <string name="images">图片</string>
     <string name="videos">视频</string>
     <string name="gifs">GIF</string>

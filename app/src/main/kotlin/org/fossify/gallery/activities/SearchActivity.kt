@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.gallery.R
@@ -34,6 +35,8 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
 
     private var mCurrAsyncTask: GetMediaAsynctask? = null
     private var mAllMedia = ArrayList<ThumbnailItem>()
+    private var mRequestGeneration = 0
+    private var mQueryGeneration = 0
 
     private val binding by viewBinding(ActivitySearchBinding::inflate)
 
@@ -46,18 +49,25 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
             padBottomImeAndSystem = listOf(binding.searchGrid)
         )
         binding.searchEmptyTextPlaceholder.setTextColor(getProperTextColor())
-        getAllMedia()
         binding.searchFastscroller.updateColors(getProperPrimaryColor())
     }
 
     override fun onResume() {
         super.onResume()
+        mCurrAsyncTask?.stopFetching()
+        mRequestGeneration++
+        mQueryGeneration++
+        mAllMedia.clear()
+        getMediaAdapter()?.updateMedia(arrayListOf())
+        getAllMedia()
         updateMenuColors()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mCurrAsyncTask?.stopFetching()
+        mRequestGeneration++
+        mQueryGeneration++
     }
 
     private fun setupOptionsMenu() {
@@ -95,28 +105,52 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun textChanged(text: String) {
+        val queryGeneration = ++mQueryGeneration
+        val requestGeneration = mRequestGeneration
+        val filterState = hiddenFilterState()
+        val allMedia = ArrayList(mAllMedia)
         ensureBackgroundThread {
             try {
-                val filtered = mAllMedia.filter { it is Medium && it.name.contains(text, true) } as ArrayList
-                filtered.sortBy { it is Medium && !it.name.startsWith(text, true) }
-                val grouped = MediaFetcher(applicationContext).groupMedia(filtered as ArrayList<Medium>, "")
+                val hiddenFilter = getHiddenMediaFilter()
+                val filtered = allMedia.filterIsInstance<Medium>().filterTo(ArrayList()) {
+                    hiddenFilter.matches(it.path) && it.name.contains(text, true)
+                }
+                filtered.sortBy { !it.name.startsWith(text, true) }
+                val grouped = MediaFetcher(applicationContext).groupMedia(filtered, SHOW_ALL)
                 runOnUiThread {
-                    if (grouped.isEmpty()) {
+                    val isCurrentRequest = requestGeneration == mRequestGeneration &&
+                        queryGeneration == mQueryGeneration
+                    if (!isCurrentRequest || filterState != hiddenFilterState()) {
+                        return@runOnUiThread
+                    }
+                    val visible = filterHiddenMedia(grouped)
+                    if (visible.isEmpty()) {
                         binding.searchEmptyTextPlaceholder.text = getString(org.fossify.commons.R.string.no_items_found)
                         binding.searchEmptyTextPlaceholder.beVisible()
                     } else {
                         binding.searchEmptyTextPlaceholder.beGone()
                     }
 
-                    handleGridSpacing(grouped)
-                    getMediaAdapter()?.updateMedia(grouped)
+                    handleGridSpacing(visible)
+                    getMediaAdapter()?.updateMedia(visible)
                 }
             } catch (ignored: Exception) {
             }
         }
     }
 
+    private fun hiddenFilterState() = Triple(
+        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
+    )
+
+    private fun filterHiddenMedia(media: ArrayList<ThumbnailItem>): ArrayList<ThumbnailItem> {
+        val hiddenFilter = getHiddenMediaFilter()
+        val filtered = media.filterIsInstance<Medium>().filterTo(ArrayList()) { hiddenFilter.matches(it.path) }
+        return MediaFetcher(applicationContext).groupMedia(filtered, SHOW_ALL)
+    }
+
     private fun setupAdapter() {
+        mAllMedia = filterHiddenMedia(mAllMedia)
         val currAdapter = binding.searchGrid.adapter
         if (currAdapter == null) {
             MediaAdapter(this, mAllMedia, this, false, false, "", binding.searchGrid) {
@@ -225,23 +259,35 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun getAllMedia() {
+        val requestGeneration = mRequestGeneration
+        val filterState = hiddenFilterState()
         getCachedMedia("") {
-            if (it.isNotEmpty()) {
-                mAllMedia = it.clone() as ArrayList<ThumbnailItem>
-            }
             runOnUiThread {
-                setupAdapter()
+                if (requestGeneration == mRequestGeneration && filterState == hiddenFilterState()) {
+                    mAllMedia = filterHiddenMedia(it)
+                    setupAdapter()
+                    startAsyncTask(false)
+                }
             }
-            startAsyncTask(false)
         }
     }
 
     private fun startAsyncTask(updateItems: Boolean) {
+        val requestGeneration = ++mRequestGeneration
+        mQueryGeneration++
+        val filterState = hiddenFilterState()
         mCurrAsyncTask?.stopFetching()
         mCurrAsyncTask = GetMediaAsynctask(applicationContext, "", showAll = true) {
-            mAllMedia = it.clone() as ArrayList<ThumbnailItem>
-            if (updateItems) {
-                textChanged(mLastSearchedText)
+            runOnUiThread {
+                if (requestGeneration != mRequestGeneration || filterState != hiddenFilterState()) {
+                    return@runOnUiThread
+                }
+                mAllMedia = filterHiddenMedia(it)
+                if (updateItems) {
+                    textChanged(mLastSearchedText)
+                } else {
+                    setupAdapter()
+                }
             }
         }
 

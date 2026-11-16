@@ -238,6 +238,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getInt(FILTER_MEDIA, getDefaultFileFilter())
         set(filterMedia) = prefs.edit().putInt(FILTER_MEDIA, filterMedia).apply()
 
+    var filterHiddenOnly: Boolean
+        get() = prefs.getBoolean(FILTER_HIDDEN_ONLY, false)
+        set(filterHiddenOnly) = prefs.edit().putBoolean(FILTER_HIDDEN_ONLY, filterHiddenOnly).apply()
+
     var dirColumnCnt: Int
         get() = prefs.getInt(getDirectoryColumnsField(), getDefaultDirectoryColumnCount())
         set(dirColumnCnt) = prefs.edit().putInt(getDirectoryColumnsField(), dirColumnCnt).apply()

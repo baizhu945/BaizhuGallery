@@ -71,6 +71,7 @@ import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.getCachedMedia
+import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.getHumanizedFilename
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.launchAbout
@@ -84,6 +85,7 @@ import org.fossify.gallery.extensions.openRecycleBin
 import org.fossify.gallery.extensions.restoreRecycleBinPaths
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.showRestoreConfirmationDialog
+import org.fossify.gallery.extensions.toggleHiddenOnly
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateWidgets
 import org.fossify.gallery.helpers.DIRECTORY
@@ -123,6 +125,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private var mIsGetVideoIntent = false
     private var mIsGetAnyIntent = false
     private var mIsGettingMedia = false
+    @Volatile
+    private var mMediaGeneration = 0
     private var mAllowPickingMultiple = false
     private var mShowAll = false
     private var mLoadedInitialPhotos = false
@@ -198,6 +202,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        if (config.filterHiddenOnly) {
+            mMedia = filterHiddenMedia(mMedia)
+            getMediaAdapter()?.updateMedia(mMedia)
+        }
         updateMenuColors()
         if (mStoredAnimateGifs != config.animateGifs) {
             getMediaAdapter()?.updateAnimateGifs(config.animateGifs)
@@ -268,6 +276,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onPause() {
         super.onPause()
+        mMediaGeneration++
         mIsGettingMedia = false
         binding.mediaRefreshLayout.isRefreshing = false
         storeStateVariables()
@@ -346,6 +355,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 !mShowAll && mPath != RECYCLE_BIN && mPath != FAVORITES
             findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN
 
+            findItem(R.id.show_only_hidden).isChecked = config.filterHiddenOnly
             findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
@@ -384,6 +394,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 R.id.group -> showGroupByDialog()
                 R.id.create_new_folder -> createNewFolder()
                 R.id.open_recycle_bin -> openRecycleBin()
+                R.id.show_only_hidden -> toggleHiddenOnly { refreshHiddenFilter() }
                 R.id.temporarily_show_hidden -> tryToggleTemporarilyShowHidden()
                 R.id.stop_showing_hidden -> tryToggleTemporarilyShowHidden()
                 R.id.column_count -> changeColumnCount()
@@ -495,6 +506,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun getMediaAdapter() = binding.mediaGrid.adapter as? MediaAdapter
 
     private fun setupAdapter() {
+        mMedia = filterHiddenMedia(mMedia)
         if (!mShowAll && isDirEmpty()) {
             return
         }
@@ -575,6 +587,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun showFilterMediaDialog() {
         FilterMediaDialog(this) {
+            mCurrAsyncTask?.stopFetching()
+            mIsGettingMedia = false
+            mMedia = filterHiddenMedia(mMedia)
             mLoadedInitialPhotos = false
             binding.mediaRefreshLayout.isRefreshing = true
             binding.mediaGrid.adapter = null
@@ -653,34 +668,64 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun getMedia() {
+        if (config.filterHiddenOnly) {
+            mMedia = filterHiddenMedia(mMedia)
+            getMediaAdapter()?.updateMedia(mMedia)
+        }
         if (mIsGettingMedia) {
             return
         }
 
         mIsGettingMedia = true
+        val generation = ++mMediaGeneration
+        val filterState = hiddenFilterState()
         if (mLoadedInitialPhotos) {
-            startAsyncTask()
+            startAsyncTask(generation)
         } else {
             getCachedMedia(
                 mPath,
                 mIsGetVideoIntent && !mIsGetImageIntent,
                 mIsGetImageIntent && !mIsGetVideoIntent
             ) {
+                if (generation != mMediaGeneration || filterState != hiddenFilterState()) {
+                    return@getCachedMedia
+                }
                 if (it.isEmpty()) {
                     runOnUiThread {
                         binding.mediaRefreshLayout.isRefreshing = true
                     }
                 } else {
-                    gotMedia(it, true)
+                    gotMedia(it, true, generation)
                 }
-                startAsyncTask()
+                startAsyncTask(generation)
             }
         }
 
         mLoadedInitialPhotos = true
     }
 
-    private fun startAsyncTask() {
+    private fun hiddenFilterState() = Triple(
+        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
+    )
+
+    private fun filterHiddenMedia(media: ArrayList<ThumbnailItem>): ArrayList<ThumbnailItem> {
+        if (!config.filterHiddenOnly) {
+            return media
+        }
+        val hiddenFilter = getHiddenMediaFilter()
+        val matching = media.filterIsInstance<Medium>().filter { hiddenFilter.matches(it.path) }
+        val pathToUse = if (mShowAll) SHOW_ALL else mPath
+        return MediaFetcher(applicationContext).groupMedia(ArrayList(matching), pathToUse)
+    }
+
+    private fun isMediaRequestCurrent(generation: Int, filterState: Triple<Boolean, Boolean, Boolean>) =
+        generation == mMediaGeneration && filterState == hiddenFilterState()
+
+    private fun startAsyncTask(generation: Int) {
+        if (generation != mMediaGeneration) {
+            return
+        }
+        val filterState = hiddenFilterState()
         mCurrAsyncTask?.stopFetching()
         mCurrAsyncTask = GetMediaAsynctask(
             context = applicationContext,
@@ -690,17 +735,24 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             showAll = mShowAll
         ) {
             ensureBackgroundThread {
+                if (!isMediaRequestCurrent(generation, filterState)) {
+                    return@ensureBackgroundThread
+                }
                 val oldMedia = mMedia.clone() as ArrayList<ThumbnailItem>
                 val newMedia = it
                 try {
-                    gotMedia(newMedia, false)
+                    gotMedia(newMedia, false, generation)
 
                     // remove cached files that are no longer valid for whatever reason
                     val newPaths = newMedia.mapNotNull { it as? Medium }.map { it.path }
+                    val canReconcile = generation == mMediaGeneration && !filterState.first && !config.filterHiddenOnly
                     oldMedia
                         .mapNotNull { it as? Medium }
-                        .filter { !newPaths.contains(it.path) }
+                        .filter { canReconcile && !newPaths.contains(it.path) }
                         .forEach {
+                            if (!isMediaRequestCurrent(generation, filterState)) {
+                                return@forEach
+                            }
                             if (mPath == FAVORITES && getDoesFilePathExist(it.path)) {
                                 favoritesDB.deleteFavoritePath(it.path)
                                 mediaDB.updateFavorite(it.path, false)
@@ -717,7 +769,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun isDirEmpty(): Boolean {
-        return if (mMedia.isEmpty() && config.filterMedia > 0) {
+        return if (!config.filterHiddenOnly && mMedia.isEmpty() && config.filterMedia > 0) {
             if (mPath != FAVORITES && mPath != RECYCLE_BIN) {
                 deleteDirectoryIfEmpty()
                 deleteDBDirectory()
@@ -773,8 +825,19 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun toggleTemporarilyShowHidden(show: Boolean) {
-        mLoadedInitialPhotos = false
         config.temporarilyShowHidden = show
+        if (!show) {
+            config.filterHiddenOnly = false
+        }
+        refreshHiddenFilter()
+    }
+
+    private fun refreshHiddenFilter() {
+        mCurrAsyncTask?.stopFetching()
+        mIsGettingMedia = false
+        mLoadedInitialPhotos = false
+        mMedia = filterHiddenMedia(mMedia)
+        binding.mediaGrid.adapter = null
         getMedia()
         refreshMenuItems()
     }
@@ -1002,16 +1065,24 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         )
     }
 
-    private fun gotMedia(media: ArrayList<ThumbnailItem>, isFromCache: Boolean) {
+    private fun gotMedia(media: ArrayList<ThumbnailItem>, isFromCache: Boolean, generation: Int = mMediaGeneration) {
+        if (generation != mMediaGeneration) {
+            return
+        }
         mIsGettingMedia = false
         checkLastMediaChanged()
-        mMedia = media
+        val filterState = hiddenFilterState()
+        mMedia = filterHiddenMedia(media)
 
         runOnUiThread {
+            if (generation != mMediaGeneration || filterState != hiddenFilterState()) {
+                return@runOnUiThread
+            }
+            mMedia = filterHiddenMedia(mMedia)
             binding.loadingIndicator.hide()
             binding.mediaRefreshLayout.isRefreshing = false
-            binding.mediaEmptyTextPlaceholder.beVisibleIf(media.isEmpty() && !isFromCache)
-            binding.mediaEmptyTextPlaceholder2.beVisibleIf(media.isEmpty() && !isFromCache)
+            binding.mediaEmptyTextPlaceholder.beVisibleIf(mMedia.isEmpty() && !isFromCache)
+            binding.mediaEmptyTextPlaceholder2.beVisibleIf(mMedia.isEmpty() && !isFromCache)
 
             if (binding.mediaEmptyTextPlaceholder.isVisible()) {
                 binding.mediaEmptyTextPlaceholder.text = getString(R.string.no_media_with_filters)
@@ -1027,7 +1098,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 .filter { it is Medium && it.deletedTS == 0L }.map { it as Medium }
             Thread {
                 try {
-                    mediaDB.insertAll(mediaToInsert)
+                    if (generation == mMediaGeneration && filterState == hiddenFilterState()) {
+                        mediaDB.insertAll(mediaToInsert)
+                    }
                 } catch (e: Exception) {
                 }
             }.start()
@@ -1093,7 +1166,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 }
             }
 
-            if (mMedia.isEmpty()) {
+            if (mMedia.isEmpty() && config.filterHiddenOnly) {
+                gotMedia(arrayListOf(), false)
+            } else if (mMedia.isEmpty()) {
                 deleteDirectoryIfEmpty()
                 deleteDBDirectory()
                 finish()
