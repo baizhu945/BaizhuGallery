@@ -3,6 +3,7 @@ package org.fossify.gallery.extensions
 import android.app.Activity
 import android.content.ContentProviderOperation
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
@@ -18,6 +19,7 @@ import android.provider.MediaStore.Files
 import android.provider.MediaStore.Images
 import android.provider.Settings
 import android.util.DisplayMetrics
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
@@ -212,6 +214,7 @@ fun AppCompatActivity.hideSystemUI() {
 fun BaseSimpleActivity.addNoMedia(path: String, callback: () -> Unit) {
     val file = File(path, NOMEDIA)
     if (getDoesFilePathExist(file.absolutePath)) {
+        config.addUserHiddenFolders(listOf(path))
         callback()
         return
     }
@@ -219,22 +222,30 @@ fun BaseSimpleActivity.addNoMedia(path: String, callback: () -> Unit) {
     if (needsStupidWritePermissions(path)) {
         handleSAFDialog(file.absolutePath) {
             if (!it) {
+                callback()
                 return@handleSAFDialog
             }
 
-            val fileDocument = getDocumentFile(path)
-            if (fileDocument?.exists() == true && fileDocument.isDirectory) {
-                fileDocument.createFile("", NOMEDIA)
-                addNoMediaIntoMediaStore(file.absolutePath)
-                callback()
-            } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
-                callback()
+            try {
+                val fileDocument = getDocumentFile(path)
+                val marker = if (fileDocument?.exists() == true && fileDocument.isDirectory) {
+                    fileDocument.createFile("", NOMEDIA)
+                } else null
+                if (marker?.exists() == true && marker.name == NOMEDIA) {
+                    config.addUserHiddenFolders(listOf(path))
+                    addNoMediaIntoMediaStore(file.absolutePath)
+                } else {
+                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                }
+            } catch (e: Exception) {
+                showErrorToast(e)
             }
+            callback()
         }
     } else {
         try {
-            if (file.createNewFile()) {
+            if (file.createNewFile() || getDoesFilePathExist(file.absolutePath)) {
+                config.addUserHiddenFolders(listOf(path))
                 ensureBackgroundThread {
                     addNoMediaIntoMediaStore(file.absolutePath)
                 }
@@ -264,11 +275,18 @@ fun BaseSimpleActivity.addNoMediaIntoMediaStore(path: String) {
 fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = null) {
     val file = File(path, NOMEDIA)
     if (!getDoesFilePathExist(file.absolutePath)) {
+        // A negative storage probe may mean lost access, not a removed marker.
+        if (isOriginalPathVerifiedAbsent(file.absolutePath)) config.removeUserHiddenFolders(listOf(path))
         callback?.invoke()
         return
     }
 
-    tryDeleteFileDirItem(file.toFileDirItem(applicationContext), false, false) {
+    tryDeleteFileDirItem(file.toFileDirItem(applicationContext), false, false) { success ->
+        if (!success) {
+            callback?.invoke()
+            return@tryDeleteFileDirItem
+        }
+        config.removeUserHiddenFolders(listOf(path))
         callback?.invoke()
         deleteFromMediaStore(file.absolutePath) { needsRescan ->
             if (needsRescan) {
@@ -286,6 +304,11 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
     val path = oldPath.getParentPath()
     var filename = oldPath.getFilenameFromPath()
     if ((hide && filename.startsWith('.')) || (!hide && !filename.startsWith('.'))) {
+        if (hide) {
+            if (getDoesFilePathExist(oldPath)) config.addUserHiddenFiles(listOf(oldPath))
+        } else {
+            config.removeUserHiddenFiles(listOf(oldPath))
+        }
         callback?.invoke(oldPath)
         return
     }
@@ -293,17 +316,31 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
     filename = if (hide) {
         ".${filename.trimStart('.')}"
     } else {
-        filename.substring(1, filename.length)
+        filename.trimStart('.')
+    }
+    if (filename.isEmpty()) {
+        callback?.invoke(oldPath)
+        return
     }
 
     val newPath = "$path/$filename"
-    renameFile(oldPath, newPath, false) { success, useAndroid30Way ->
-        runOnUiThread {
-            callback?.invoke(newPath)
+    // Commons' rename can replace an existing target. Visibility changes must never do that.
+    if (getDoesFilePathExist(newPath, config.OTGPath)) {
+        toast(R.string.hidden_name_conflict, Toast.LENGTH_LONG)
+        callback?.invoke(oldPath)
+        return
+    }
+    renameFile(oldPath, newPath, false) { success, _ ->
+        if (success) {
+            config.remapUserHiddenPaths(oldPath, newPath)
+            if (hide) config.addUserHiddenFiles(listOf(newPath))
+            else config.removeUserHiddenFiles(listOf(oldPath, newPath))
+            ensureBackgroundThread {
+                updateDBMediaPath(oldPath, newPath)
+            }
         }
-
-        ensureBackgroundThread {
-            updateDBMediaPath(oldPath, newPath)
+        runOnUiThread {
+            callback?.invoke(if (success) newPath else oldPath)
         }
     }
 }
@@ -319,10 +356,37 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, 
         val destination = it
         handleSAFDialog(source) {
             if (it) {
-                copyMoveFilesTo(fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                val registry = config.userHiddenPaths
+                val trackedSource = fileDirItems.any { item ->
+                    registry.matches(item.path) { directory ->
+                        getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath)
+                    } || (item.isDirectory && (registry.files + registry.folders).any { claimed ->
+                        claimed.startsWith("${item.path.trimEnd('/')}/")
+                    })
+                }
+                copyMoveFilesTo(
+                    fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden
+                ) { actualDestination ->
+                    // Commons exposes no verified per-file mappings, including conflict renames.
+                    // Keep source intent; transferred hidden files may need a manual claim.
+                    if (trackedSource) runOnUiThread {
+                        toast(R.string.hidden_transfer_reclaim_notice, Toast.LENGTH_LONG)
+                    }
+                    callback(actualDestination)
+                }
             }
         }
     }
+}
+
+// Negative SAF/cache probes are not proof of absence. Be conservative when permission
+// or a missing parent prevents an actual directory listing; retained intent is safer.
+internal fun Context.isOriginalPathVerifiedAbsent(path: String): Boolean {
+    if (isRPlus() && !isExternalStorageManager()) return false
+    if (!isRPlus() && !hasPermission(PERMISSION_READ_STORAGE)) return false
+    val file = File(path)
+    val parent = file.parentFile ?: return false
+    return parent.list()?.none { it == file.name } == true
 }
 
 fun BaseSimpleActivity.tryDeleteFileDirItem(
@@ -330,7 +394,10 @@ fun BaseSimpleActivity.tryDeleteFileDirItem(
     callback: ((wasSuccess: Boolean) -> Unit)? = null
 ) {
     deleteFile(fileDirItem, allowDeleteFolder, isDeletingMultipleFiles = false) {
-        if (deleteFromDatabase) {
+        if (it) {
+            forgetDeletedUserHiddenPath(fileDirItem.path, recursive = fileDirItem.isDirectory)
+        }
+        if (deleteFromDatabase && it) {
             ensureBackgroundThread {
                 deleteDBPath(fileDirItem.path)
                 runOnUiThread {
@@ -412,7 +479,11 @@ fun BaseSimpleActivity.restoreRecycleBinPaths(paths: ArrayList<String>, callback
         val newPaths = ArrayList<String>()
         var shownRestoringToPictures = false
         for (source in paths) {
-            var destination = source.removePrefix(recycleBinPath)
+            val original = source.removePrefix(recycleBinPath)
+            val sourceWasUserHidden = config.userHiddenPaths.matches(original) { directory ->
+                getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath)
+            }
+            var destination = original
 
             val destinationParent = destination.getParentPath()
             if (isRestrictedWithSAFSdk30(destinationParent) && !isInDownloadDir(destinationParent)) {
@@ -459,10 +530,13 @@ fun BaseSimpleActivity.restoreRecycleBinPaths(paths: ArrayList<String>, callback
 
                 out?.flush()
 
-                if (File(source).length() == copiedSize) {
-                    mediaDB.updateDeleted(destination.removePrefix(recycleBinPath), 0, "$RECYCLE_BIN${source.removePrefix(recycleBinPath)}")
+                if (File(source).length() == copiedSize && getDoesFilePathExist(destination)) {
+                    // Restore copies bytes; neither a live original nor the bin copy was deleted.
+                    // Preserve their intent and propagate only this verified file's effective claim.
+                    recordRestoredUserHiddenClaim(sourceWasUserHidden, destination)
+                    mediaDB.updateDeleted(destination.removePrefix(recycleBinPath), 0, "$RECYCLE_BIN$original")
+                    newPaths.add(destination)
                 }
-                newPaths.add(destination)
 
                 if (config.keepLastModified && lastModified != 0L) {
                     File(destination).setLastModified(lastModified)
@@ -485,10 +559,27 @@ fun BaseSimpleActivity.restoreRecycleBinPaths(paths: ArrayList<String>, callback
     }
 }
 
+private fun Context.recordRestoredUserHiddenClaim(wasUserHidden: Boolean, destination: String) {
+    if (wasUserHidden) {
+        config.addUserHiddenFiles(listOf(destination))
+    }
+}
+
 fun BaseSimpleActivity.emptyTheRecycleBin(callback: (() -> Unit)? = null) {
     ensureBackgroundThread {
         try {
-            recycleBin.deleteRecursively()
+            val originals = recycleBin.walkTopDown().filter { it != recycleBin }.map {
+                it.absolutePath.removePrefix(recycleBinPath)
+            }.toList()
+            val deleted = recycleBin.deleteRecursively()
+            // Also clean verified deletions on a partial purge, without dropping retained copies.
+            originals.filter {
+                isOriginalPathVerifiedAbsent(it) && !File(recycleBinPath, it).exists()
+            }.forEach { config.removeUserHiddenPath(it) }
+            if (!deleted) {
+                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                return@ensureBackgroundThread
+            }
             mediaDB.clearRecycleBin()
             directoryDB.deleteRecycleBin()
             toast(org.fossify.commons.R.string.recycle_bin_emptied)

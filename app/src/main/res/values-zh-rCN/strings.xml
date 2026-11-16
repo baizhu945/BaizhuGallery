@@ -35,6 +35,17 @@
     <string name="restore_to_path">恢复至“%s”</string>
     <string name="filter_media">过滤显示的文件</string>
     <string name="show_only_hidden_items">仅显示隐藏的项目</string>
+    <string name="include_other_hidden">包含其它隐藏</string>
+    <string name="no_my_hidden_media">“我的隐藏”中没有符合条件的项目。可开启“包含其它隐藏”，找到并认领以前隐藏的内容。</string>
+    <string name="other_hidden_description">默认只显示你主动隐藏或认领的项目。其它隐藏项目可能包含系统和应用图片。请选择以前隐藏的图片或文件夹，使用“纳入我的隐藏”，然后关闭“包含其它隐藏”。</string>
+    <string name="claim_hidden">纳入我的隐藏</string>
+    <string name="forget_hidden_claim">取消认领</string>
+    <string name="claim_hidden_folder_description">将选中的隐藏文件夹纳入“我的隐藏”？由这些文件夹本身隐藏的普通图片会被纳入。内部独立隐藏的文件和子文件夹仍需单独认领。</string>
+    <string name="forget_hidden_description">取消选中的认领记录？文件仍会在存储中保持隐藏。若没有已认领的父文件夹，它们将不再出现在默认隐藏视图中。</string>
+    <string name="my_hidden_claimed">已纳入我的隐藏</string>
+    <string name="my_hidden_forgotten">已取消认领</string>
+    <string name="hidden_name_conflict">目标已存在，两个文件均已保留。</string>
+    <string name="hidden_transfer_reclaim_notice">传输后的隐藏项目可能需要在目标位置重新“纳入我的隐藏”。可开启“包含其它隐藏”找到它们；应用不会猜测新路径并错误认领其它文件。</string>
     <string name="images">图片</string>
     <string name="videos">视频</string>
     <string name="gifs">GIF</string>

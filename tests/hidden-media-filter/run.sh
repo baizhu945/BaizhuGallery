@@ -3,12 +3,15 @@ set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd)
-helper="$project_dir/app/src/main/kotlin/org/fossify/gallery/helpers/HiddenMediaFilter.kt"
+helper_dir="$project_dir/app/src/main/kotlin/org/fossify/gallery/helpers"
+helpers=("$helper_dir/HiddenMediaFilter.kt" "$helper_dir/UserHiddenPaths.kt" "$helper_dir/HiddenMediaState.kt")
 
-if [[ ! -f "$helper" ]]; then
-    printf 'Pending: production helper does not exist: %s\n' "$helper" >&2
-    exit 2
-fi
+for helper in "${helpers[@]}"; do
+    if [[ ! -f "$helper" ]]; then
+        printf 'Pending: production helper does not exist: %s\n' "$helper" >&2
+        exit 2
+    fi
+done
 
 command -v kotlinc >/dev/null
 command -v java >/dev/null
@@ -35,5 +38,6 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-kotlinc "$helper" "$script_dir/HiddenMediaFilterTest.kt" -include-runtime -d "$work_dir/tests.jar"
+kotlinc "${helpers[@]}" "$script_dir/HiddenMediaFilterTest.kt" "$script_dir/UserHiddenPathsTest.kt" \
+    "$script_dir/HiddenMediaStateTest.kt" -include-runtime -d "$work_dir/tests.jar"
 java -Djava.io.tmpdir="$work_dir" -jar "$work_dir/tests.jar"

@@ -8,6 +8,7 @@ import org.fossify.commons.helpers.SORT_BY_DATE_TAKEN
 import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.getFavoritePaths
+import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.helpers.*
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
@@ -62,7 +63,13 @@ class GetMediaAsynctask(
 
     override fun onPostExecute(media: ArrayList<ThumbnailItem>) {
         super.onPostExecute(media)
-        callback(media)
+        if (applyHiddenFilter) {
+            val hiddenFilter = context.getHiddenMediaFilter()
+            val visible = media.filterIsInstance<Medium>().filterTo(ArrayList()) { hiddenFilter.matches(it.path) }
+            callback(mediaFetcher.groupMedia(visible, if (showAll) SHOW_ALL else mPath))
+        } else {
+            callback(media)
+        }
     }
 
     fun stopFetching() {

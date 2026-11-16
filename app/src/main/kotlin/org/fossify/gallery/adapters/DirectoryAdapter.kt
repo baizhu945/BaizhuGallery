@@ -73,12 +73,14 @@ import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
 import org.fossify.gallery.extensions.addNoMedia
 import org.fossify.gallery.extensions.checkAppendingHidden
+import org.fossify.gallery.extensions.claimHiddenPaths
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
+import org.fossify.gallery.extensions.forgetHiddenPaths
 import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.isThisOrParentFolderHidden
@@ -194,6 +196,7 @@ class DirectoryAdapter(
 
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
 
+            checkHiddenClaimVisibility(this, selectedPaths)
             checkHideBtnVisibility(this, selectedPaths)
             checkPinBtnVisibility(this, selectedPaths)
         }
@@ -216,6 +219,8 @@ class DirectoryAdapter(
             R.id.cab_empty_disable_recycle_bin -> emptyAndDisableRecycleBin()
             R.id.cab_hide -> toggleFoldersVisibility(true)
             R.id.cab_unhide -> toggleFoldersVisibility(false)
+            R.id.cab_claim_hidden -> changeHiddenClaim(true)
+            R.id.cab_forget_hidden -> changeHiddenClaim(false)
             R.id.cab_exclude -> tryExcludeFolder()
             R.id.cab_lock -> tryLockFolder()
             R.id.cab_unlock -> unlockFolder()
@@ -264,6 +269,31 @@ class DirectoryAdapter(
 
         menu.findItem(R.id.cab_unhide).isVisible =
             (!isRPlus() || isExternalStorageManager()) && selectedPaths.any { it.doesThisOrParentHaveNoMedia(HashMap(), null) }
+    }
+
+    private fun checkHiddenClaimVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
+        val filter = activity.getHiddenMediaFilter()
+        val paths = selectedPaths.filter { it != FAVORITES && it != RECYCLE_BIN && !config.isFolderProtected(it) }
+        menu.findItem(R.id.cab_claim_hidden).isVisible = paths.any {
+            it !in config.userHiddenFolders && filter.isHidden("${it.trimEnd('/')}/gallery-origin-probe.jpg")
+        }
+        menu.findItem(R.id.cab_forget_hidden).isVisible = paths.any { it in config.userHiddenFolders }
+    }
+
+    private fun changeHiddenClaim(claim: Boolean) {
+        val paths = getSelectedPaths().filter {
+            it != FAVORITES && it != RECYCLE_BIN && !config.isFolderProtected(it)
+        }
+        val changed = {
+            finishActMode()
+            listener?.refreshItems()
+            Unit
+        }
+        if (claim) {
+            activity.claimHiddenPaths(paths, folders = true, onChanged = changed)
+        } else {
+            activity.forgetHiddenPaths(paths, folders = true, onChanged = changed)
+        }
     }
 
     private fun checkPinBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
@@ -324,6 +354,7 @@ class DirectoryAdapter(
             activity.handleLockedFolderOpening(sourcePath) { success ->
                 if (success) {
                     RenameItemDialog(activity, dir.absolutePath) {
+                        config.remapUserHiddenPaths(sourcePath, it)
                         activity.runOnUiThread {
                             firstDir.apply {
                                 path = it
@@ -441,7 +472,7 @@ class DirectoryAdapter(
     }
 
     private fun updateFolderNames() {
-        if (config.filterHiddenOnly) {
+        if (config.isHiddenMediaFilteringActive) {
             listener?.refreshItems()
             return
         }
@@ -660,7 +691,7 @@ class DirectoryAdapter(
     }
 
     private fun canDeleteSelection(paths: Collection<String>): Boolean {
-        return !config.filterHiddenOnly || paths.none { it == FAVORITES || it == RECYCLE_BIN }
+        return !config.isHiddenMediaFilteringActive || paths.none { it == FAVORITES || it == RECYCLE_BIN }
     }
 
     private fun askConfirmDelete() {

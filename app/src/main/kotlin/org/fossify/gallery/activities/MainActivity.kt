@@ -96,6 +96,7 @@ import org.fossify.gallery.extensions.getDirsToShow
 import org.fossify.gallery.extensions.getDistinctPath
 import org.fossify.gallery.extensions.getFavoritePaths
 import org.fossify.gallery.extensions.getHiddenMediaFilter
+import org.fossify.gallery.extensions.getHiddenMediaState
 import org.fossify.gallery.extensions.getNoMediaFoldersSync
 import org.fossify.gallery.extensions.getOTGFolderChildrenNames
 import org.fossify.gallery.extensions.getSortedDirectories
@@ -112,6 +113,7 @@ import org.fossify.gallery.extensions.openRecycleBin
 import org.fossify.gallery.extensions.removeInvalidDBDirectories
 import org.fossify.gallery.extensions.storeDirectoryItems
 import org.fossify.gallery.extensions.toggleHiddenOnly
+import org.fossify.gallery.extensions.toggleOtherHidden
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBDirectory
 import org.fossify.gallery.extensions.updateWidgets
@@ -124,6 +126,7 @@ import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_MONTHLY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_DAILY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_MONTHLY
 import org.fossify.gallery.helpers.GROUP_DESCENDING
+import org.fossify.gallery.helpers.HiddenMediaState
 import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.MAX_COLUMN_COUNT
 import org.fossify.gallery.helpers.MONTH_MILLISECONDS
@@ -172,6 +175,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mIsGettingDirs = false
     @Volatile
     private var mDirectoryGeneration = 0
+    private var mRequestedHiddenMediaState: HiddenMediaState? = null
     private var mLoadedInitialPhotos = false
     private var mShouldStopFetching = false
     private var mWasDefaultFolderChecked = false
@@ -294,7 +298,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     override fun onResume() {
         super.onResume()
-        if (config.filterHiddenOnly) {
+        if (config.isHiddenMediaFilteringActive || mRequestedHiddenMediaState != hiddenFilterState()) {
+            mDirs.clear()
             binding.directoriesGrid.adapter = null
             if (binding.mainMenu.isSearchOpen) {
                 tryLoadGallery()
@@ -474,6 +479,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         binding.mainMenu.requireToolbar().menu.apply {
             findItem(R.id.show_only_hidden).isChecked = config.filterHiddenOnly
+            findItem(R.id.include_other_hidden).isChecked = config.includeOtherHidden
             findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
@@ -515,6 +521,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 R.id.show_all -> showAllMedia()
                 R.id.change_view_type -> changeViewType()
                 R.id.show_only_hidden -> toggleHiddenOnly { refreshHiddenFilter() }
+                R.id.include_other_hidden -> toggleOtherHidden { refreshHiddenFilter() }
                 R.id.temporarily_show_hidden -> tryToggleTemporarilyShowHidden()
                 R.id.stop_showing_hidden -> tryToggleTemporarilyShowHidden()
                 R.id.temporarily_show_excluded -> tryToggleTemporarilyShowExcluded()
@@ -638,6 +645,16 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun getDirectories() {
+        val state = hiddenFilterState()
+        if (mRequestedHiddenMediaState != state) {
+            mDirectoryGeneration++
+            mLastMediaFetcher?.shouldStop = true
+            mIsGettingDirs = false
+            mLoadedInitialPhotos = false
+            mDirs.clear()
+            binding.directoriesGrid.adapter = null
+        }
+        mRequestedHiddenMediaState = state
         if (mIsGettingDirs) {
             return
         }
@@ -748,6 +765,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun refreshHiddenFilter() {
+        mDirectoryGeneration++
+        mDirs.clear()
         mShouldStopFetching = true
         mLastMediaFetcher?.shouldStop = true
         mIsGettingDirs = false
@@ -1134,17 +1153,15 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
-    private fun hiddenFilterState() = Triple(
-        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
-    )
+    private fun hiddenFilterState() = getHiddenMediaState()
 
-    private fun isDirectoryRequestCurrent(generation: Int, filterState: Triple<Boolean, Boolean, Boolean>) =
+    private fun isDirectoryRequestCurrent(generation: Int, filterState: HiddenMediaState) =
         generation == mDirectoryGeneration && filterState == hiddenFilterState()
 
     private fun gotDirectories(newDirs: ArrayList<Directory>) {
         val generation = mDirectoryGeneration
         val filterState = hiddenFilterState()
-        val hiddenOnly = config.filterHiddenOnly
+        val filteringActive = filterState.isFilteringActive
         mIsGettingDirs = false
         mShouldStopFetching = false
 
@@ -1306,13 +1323,14 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
                 // update directories and media files in the local db, delete invalid items. Intentionally creating a new thread
                 // A display subset must not replace the complete directory summary.
-                if (generation == mDirectoryGeneration && !hiddenOnly && !config.filterHiddenOnly) {
+                if (generation == mDirectoryGeneration && !filteringActive && !config.isHiddenMediaFilteringActive) {
                     updateDBDirectory(directory)
                 }
                 if (!directory.isRecycleBin() && !directory.areFavorites()) {
                     Thread {
                         try {
-                            if (generation == mDirectoryGeneration && filterState == hiddenFilterState()) {
+                            // Individual rows are safe to refresh; only aggregate replacement/deletion is unsafe.
+                            if (isDirectoryRequestCurrent(generation, filterState)) {
                                 mediaDB.insertAll(curMedia)
                             }
                         } catch (ignored: Exception) {
@@ -1321,7 +1339,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 }
 
                 // Filtering is not evidence that a cached file was deleted.
-                if (!hiddenOnly && !config.filterHiddenOnly && !directory.isRecycleBin()) {
+                if (!filteringActive && !config.isHiddenMediaFilteringActive && !directory.isRecycleBin()) {
                     getCachedMedia(directory.path, getVideosOnly, getImagesOnly) {
                         if (generation != mDirectoryGeneration || filterState != hiddenFilterState()) {
                             return@getCachedMedia
@@ -1344,7 +1362,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             if (dirPathsToRemove.isNotEmpty()) {
                 val dirsToRemove = dirs.filter { dirPathsToRemove.contains(it.path) }
                 dirsToRemove.forEach {
-                    if (generation == mDirectoryGeneration && !hiddenOnly && !config.filterHiddenOnly) {
+                    if (generation == mDirectoryGeneration && !filteringActive && !config.isHiddenMediaFilteringActive) {
                         directoryDB.deleteDirPath(it.path)
                     }
                 }
@@ -1439,7 +1457,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                     if (generation != mDirectoryGeneration || filterState != hiddenFilterState()) {
                         return@Thread
                     }
-                    if (!hiddenOnly && !config.filterHiddenOnly) {
+                    if (!filteringActive && !config.isHiddenMediaFilteringActive) {
                         directoryDB.insert(newDir)
                     }
                     if (folder != RECYCLE_BIN && folder != FAVORITES) {
@@ -1456,7 +1474,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun finishDirectoryLoading(
-        dirs: ArrayList<Directory>, generation: Int, filterState: Triple<Boolean, Boolean, Boolean>
+        dirs: ArrayList<Directory>, generation: Int, filterState: HiddenMediaState
     ) {
         mLoadedInitialPhotos = true
         if (config.appRunCount > 1) {
@@ -1526,11 +1544,19 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         binding.directoriesEmptyPlaceholder.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
         binding.directoriesEmptyPlaceholder2.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
 
-        if (binding.mainMenu.isSearchOpen) {
+        if (dirs.isEmpty() && config.filterHiddenOnly && !config.includeOtherHidden) {
+            binding.directoriesEmptyPlaceholder.text = getString(R.string.no_my_hidden_media)
+            binding.directoriesEmptyPlaceholder2.text = getString(R.string.include_other_hidden)
+            binding.directoriesEmptyPlaceholder2.setOnClickListener {
+                toggleOtherHidden { refreshHiddenFilter() }
+            }
+        } else if (binding.mainMenu.isSearchOpen) {
             binding.directoriesEmptyPlaceholder.text =
                 getString(org.fossify.commons.R.string.no_items_found)
             binding.directoriesEmptyPlaceholder2.beGone()
-        } else if (dirs.isEmpty() && !config.filterHiddenOnly && config.filterMedia == getDefaultFileFilter()) {
+        } else if (
+            dirs.isEmpty() && !config.isHiddenMediaFilteringActive && config.filterMedia == getDefaultFileFilter()
+        ) {
             if (isRPlus() && !isExternalStorageManager()) {
                 binding.directoriesEmptyPlaceholder.text =
                     getString(org.fossify.commons.R.string.no_items_found)
@@ -1646,6 +1672,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun checkInvalidDirectories(dirs: ArrayList<Directory>) {
+        val filterState = hiddenFilterState()
         val invalidDirs = ArrayList<Directory>()
         val OTGPath = config.OTGPath
         dirs.filter { !it.areFavorites() && !it.isRecycleBin() }.forEach {
@@ -1693,11 +1720,19 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (invalidDirs.isNotEmpty()) {
             dirs.removeAll(invalidDirs)
             setupAdapter(dirs)
-            invalidDirs.forEach {
-                try {
-                    directoryDB.deleteDirPath(it.path)
-                } catch (ignored: Exception) {
-                }
+            deleteInvalidDirectoryCache(invalidDirs, filterState)
+        }
+    }
+
+    private fun deleteInvalidDirectoryCache(invalidDirs: ArrayList<Directory>, filterState: HiddenMediaState) {
+        val stateChanged = filterState != hiddenFilterState()
+        if (filterState.isFilteringActive || config.isHiddenMediaFilteringActive || stateChanged) {
+            return
+        }
+        invalidDirs.forEach {
+            try {
+                directoryDB.deleteDirPath(it.path)
+            } catch (ignored: Exception) {
             }
         }
     }
@@ -1826,7 +1861,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     override fun refreshItems() {
-        getDirectories()
+        refreshHiddenFilter()
     }
 
     override fun recheckPinnedFolders() {
@@ -1836,7 +1871,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     override fun updateDirectories(directories: ArrayList<Directory>) {
+        val filterState = hiddenFilterState()
         ensureBackgroundThread {
+            if (filterState != hiddenFilterState() || filterState.isFilteringActive || config.isHiddenMediaFilteringActive) {
+                return@ensureBackgroundThread
+            }
             storeDirectoryItems(directories)
             removeInvalidDBDirectories()
         }

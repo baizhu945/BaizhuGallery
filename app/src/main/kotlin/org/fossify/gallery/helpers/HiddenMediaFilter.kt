@@ -6,19 +6,22 @@ class HiddenMediaFilter(
     private val onlyHidden: Boolean,
     private val hiddenAccessAllowed: Boolean,
     private val hasNoMedia: (directory: String) -> Boolean,
-    private val originalPath: (path: String) -> String = { it }
+    private val originalPath: (path: String) -> String = { it },
+    private val includeOtherHidden: Boolean = false,
+    private val isUserHidden: (String) -> Boolean = { false }
 ) {
     private val hiddenDirectories = HashMap<String, Boolean>()
 
     fun matches(path: String): Boolean {
-        if (!onlyHidden) {
-            return true
+        val pathToCheck = originalPath(path)
+        if (!isHidden(path)) {
+            return !onlyHidden
         }
 
-        if (!hiddenAccessAllowed) {
-            return false
-        }
+        return hiddenAccessAllowed && (includeOtherHidden || isUserHidden(pathToCheck))
+    }
 
+    fun isHidden(path: String): Boolean {
         val pathToCheck = originalPath(path)
         return pathToCheck.startsWith('.') || pathToCheck.contains("/.") || isDirectoryHidden(File(pathToCheck).parent)
     }

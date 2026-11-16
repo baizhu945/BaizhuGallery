@@ -88,6 +88,7 @@ import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_MONTHLY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_DAILY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_MONTHLY
 import org.fossify.gallery.helpers.HiddenMediaFilter
+import org.fossify.gallery.helpers.HiddenMediaState
 import org.fossify.gallery.helpers.IsoTypeReader
 import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.LOCATION_OTG
@@ -134,16 +135,36 @@ fun Context.getHumanizedFilename(path: String): String {
 
 val Context.config: Config get() = Config.newInstance(applicationContext)
 
+fun Context.getHiddenMediaState(): HiddenMediaState {
+    val config = config
+    return HiddenMediaState(
+        onlyHidden = config.filterHiddenOnly,
+        includeOtherHidden = config.includeOtherHidden,
+        showHidden = config.shouldShowHidden,
+        hasStorageAccess = !isRPlus() || isExternalStorageManager(),
+        registryRevision = config.hiddenRegistryRevision
+    )
+}
+
 fun Context.getHiddenMediaFilter(): HiddenMediaFilter {
     val config = config
+    val userHiddenPaths = config.userHiddenPaths
+    val noMediaStatuses = HashMap<String, Boolean>()
+    val hasNoMedia: (String) -> Boolean = { directory ->
+        noMediaStatuses.getOrPut(directory) {
+            getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath)
+        }
+    }
     val binPath = recycleBinPath.trimEnd('/')
     return HiddenMediaFilter(
         onlyHidden = config.filterHiddenOnly,
         hiddenAccessAllowed = config.shouldShowHidden && (!isRPlus() || isExternalStorageManager()),
-        hasNoMedia = { directory -> getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath) },
+        hasNoMedia = hasNoMedia,
         originalPath = { path ->
             if (path.startsWith("$binPath/")) path.removePrefix(binPath) else path
-        }
+        },
+        includeOtherHidden = config.includeOtherHidden,
+        isUserHidden = { path -> userHiddenPaths.matches(path, hasNoMedia) }
     )
 }
 
@@ -942,7 +963,7 @@ fun Context.getCachedMediaDirectories(
     callback: (ArrayList<Directory>) -> Unit
 ) {
     getCachedDirectories(getVideosOnly, getImagesOnly) { directories ->
-        if (!config.filterHiddenOnly) {
+        if (!config.isHiddenMediaFilteringActive) {
             callback(directories)
             return@getCachedDirectories
         }
@@ -1003,6 +1024,7 @@ fun Context.getCachedMedia(
     callback: (ArrayList<ThumbnailItem>) -> Unit
 ) {
     ensureBackgroundThread {
+        val filterState = getHiddenMediaState()
         val mediaFetcher = MediaFetcher(this)
         val foldersToScan = if (path.isEmpty()) {
             mediaFetcher.getFoldersToScan()
@@ -1064,12 +1086,19 @@ fun Context.getCachedMedia(
         mediaFetcher.sortMedia(media, config.getFolderSorting(pathToUse))
         val grouped = mediaFetcher.groupMedia(media, pathToUse)
         callback(grouped.clone() as ArrayList<ThumbnailItem>)
+        val policyChanged = filterState != getHiddenMediaState()
+        if (filterState.isFilteringActive || config.isHiddenMediaFilteringActive || policyChanged) {
+            return@ensureBackgroundThread
+        }
         val OTGPath = config.OTGPath
 
         try {
             val mediaToDelete = ArrayList<Medium>()
             // creating a new thread intentionally, do not reuse the common background thread
             Thread {
+                if (filterState != getHiddenMediaState() || config.isHiddenMediaFilteringActive) {
+                    return@Thread
+                }
                 media.filter { !getDoesFilePathExist(it.path, OTGPath) }.forEach {
                     if (it.path.startsWith(recycleBinPath)) {
                         deleteDBPath(it.path)
@@ -1111,6 +1140,7 @@ fun Context.removeInvalidDBDirectories(dirs: ArrayList<Directory>? = null) {
 }
 
 fun Context.updateDBMediaPath(oldPath: String, newPath: String) {
+    // Copy/move callers may provide tentative paths. Only verified rename callbacks remap intent.
     val newFilename = newPath.getFilenameFromPath()
     val newParentPath = newPath.getParentPath()
     try {
@@ -1180,8 +1210,25 @@ fun Context.getUpdatedDeletedMedia(): ArrayList<Medium> {
     return media
 }
 
-fun Context.deleteDBPath(path: String) {
+fun Context.deleteDBPath(path: String, forgetUserHidden: Boolean = false) {
+    if (forgetUserHidden) {
+        forgetDeletedUserHiddenPath(path)
+    }
     deleteMediumWithPath(path.replaceFirst(recycleBinPath, RECYCLE_BIN))
+}
+
+// Call only after a successful filesystem deletion, never for cache invalidation.
+internal fun Context.forgetDeletedUserHiddenPath(path: String, recursive: Boolean = false) {
+    val binPath = recycleBinPath.trimEnd('/')
+    val isRecycled = path.startsWith("$binPath/")
+    val original = if (isRecycled) path.removePrefix(binPath) else path
+    if (isRecycled && !isOriginalPathVerifiedAbsent(original)) {
+        return
+    }
+    val retainedCopy = "$binPath/${original.trimStart('/')}"
+    if (!getDoesFilePathExist(retainedCopy)) {
+        config.removeUserHiddenPath(original, recursive)
+    }
 }
 
 fun Context.deleteMediumWithPath(path: String) {
@@ -1371,9 +1418,10 @@ fun Context.createDirectoryFromMedia(
 
 private fun Context.getAlbumCover(path: String, albumCovers: ArrayList<AlbumCover>, media: ArrayList<Medium>): String? {
     val OTGPath = config.OTGPath
-    val onlyHidden = config.filterHiddenOnly
+    val hiddenFilter = getHiddenMediaFilter()
     return albumCovers.lastOrNull { cover ->
-        val matchesFilter = !onlyHidden || media.any { it.path == cover.tmb }
+        val matchesFilter = hiddenFilter.matches(cover.tmb) &&
+            (!config.isHiddenMediaFilteringActive || media.any { it.path == cover.tmb })
         cover.path == path && getDoesFilePathExist(cover.tmb, OTGPath) && matchesFilter
     }?.tmb
 }

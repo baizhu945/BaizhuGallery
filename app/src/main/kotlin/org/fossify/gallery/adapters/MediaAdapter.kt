@@ -57,7 +57,10 @@ import org.fossify.gallery.databinding.ThumbnailSectionBinding
 import org.fossify.gallery.databinding.VideoItemGridBinding
 import org.fossify.gallery.databinding.VideoItemListBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
+import org.fossify.gallery.extensions.claimHiddenPaths
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.forgetHiddenPaths
+import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
@@ -92,6 +95,7 @@ import org.fossify.gallery.interfaces.MediaOperationsListener
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
 import org.fossify.gallery.models.ThumbnailSection
+import java.util.concurrent.atomic.AtomicInteger
 
 class MediaAdapter(
     activity: BaseSimpleActivity,
@@ -199,6 +203,7 @@ class MediaAdapter(
             findItem(R.id.cab_restore_recycle_bin_files).isVisible = selectedPaths.all { it.startsWith(activity.recycleBinPath) }
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
 
+            checkHiddenClaimVisibility(this, selectedItems)
             checkHideBtnVisibility(this, selectedItems)
             checkFavoriteBtnVisibility(this, selectedItems)
         }
@@ -216,6 +221,8 @@ class MediaAdapter(
             R.id.cab_edit -> editFile()
             R.id.cab_hide -> toggleFileVisibility(true)
             R.id.cab_unhide -> toggleFileVisibility(false)
+            R.id.cab_claim_hidden -> changeHiddenClaim(true)
+            R.id.cab_forget_hidden -> changeHiddenClaim(false)
             R.id.cab_add_to_favorites -> toggleFavorites(true)
             R.id.cab_remove_from_favorites -> toggleFavorites(false)
             R.id.cab_restore_recycle_bin_files -> restoreFiles()
@@ -266,6 +273,28 @@ class MediaAdapter(
         menu.findItem(R.id.cab_unhide).isVisible = (!isRPlus() || isExternalStorageManager()) && !isInRecycleBin && selectedItems.any { it.isHidden() }
     }
 
+    private fun checkHiddenClaimVisibility(menu: Menu, selectedItems: ArrayList<Medium>) {
+        val filter = activity.getHiddenMediaFilter()
+        val files = config.userHiddenFiles
+        val paths = selectedItems.filter { !it.getIsInRecycleBin() }.map { it.path }
+        menu.findItem(R.id.cab_claim_hidden).isVisible = paths.any { filter.isHidden(it) && it !in files }
+        menu.findItem(R.id.cab_forget_hidden).isVisible = paths.any { it in files }
+    }
+
+    private fun changeHiddenClaim(claim: Boolean) {
+        val paths = getSelectedItems().filter { !it.getIsInRecycleBin() }.map { it.path }
+        val changed = {
+            finishActMode()
+            listener?.refreshItems()
+            Unit
+        }
+        if (claim) {
+            activity.claimHiddenPaths(paths, folders = false, onChanged = changed)
+        } else {
+            activity.forgetHiddenPaths(paths, folders = false, onChanged = changed)
+        }
+    }
+
     private fun checkFavoriteBtnVisibility(menu: Menu, selectedItems: ArrayList<Medium>) {
         menu.findItem(R.id.cab_add_to_favorites).isVisible = selectedItems.none { it.getIsInRecycleBin() } && selectedItems.any { !it.isFavorite }
         menu.findItem(R.id.cab_remove_from_favorites).isVisible = selectedItems.none { it.getIsInRecycleBin() } && selectedItems.any { it.isFavorite }
@@ -303,6 +332,7 @@ class MediaAdapter(
 
         if (selectedKeys.size == 1) {
             RenameItemDialog(activity, firstPath) {
+                config.remapUserHiddenPaths(firstPath, it)
                 ensureBackgroundThread {
                     activity.updateDBMediaPath(firstPath, it)
 
@@ -364,13 +394,18 @@ class MediaAdapter(
     }
 
     private fun toggleFileVisibility(hide: Boolean) {
+        val selected = getSelectedItems()
+        val remaining = AtomicInteger(selected.size)
         ensureBackgroundThread {
-            getSelectedItems().forEach {
-                activity.toggleFileVisibility(it.path, hide)
-            }
-            activity.runOnUiThread {
-                listener?.refreshItems()
-                finishActMode()
+            selected.forEach {
+                activity.toggleFileVisibility(it.path, hide) {
+                    if (remaining.decrementAndGet() == 0) {
+                        activity.runOnUiThread {
+                            finishActMode()
+                            listener?.refreshItems()
+                        }
+                    }
+                }
             }
         }
     }

@@ -105,6 +105,7 @@ import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getFavoritePaths
 import org.fossify.gallery.extensions.getHiddenMediaFilter
+import org.fossify.gallery.extensions.getHiddenMediaState
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.hideSystemUI
@@ -152,6 +153,7 @@ import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
 import org.fossify.gallery.helpers.GO_TO_PREV_ITEM
 import org.fossify.gallery.helpers.HIDE_SYSTEM_UI_DELAY
 import org.fossify.gallery.helpers.HiddenMediaFilter
+import org.fossify.gallery.helpers.HiddenMediaState
 import org.fossify.gallery.helpers.IS_VIEW_INTENT
 import org.fossify.gallery.helpers.MAX_PRINT_SIDE_SIZE
 import org.fossify.gallery.helpers.PATH
@@ -209,6 +211,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private var mIsOrientationLocked = false
 
+    private var mRequestedHiddenMediaState: HiddenMediaState? = null
+    private var mIsViewerInitialized = false
     private var mMediaFiles = ArrayList<Medium>()
     private var mFavoritePaths = ArrayList<String>()
     private var mIgnoredPaths = ArrayList<String>()
@@ -256,7 +260,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val hiddenFilter = getHiddenMediaFilter()
         val hasFilteredMedia = mMediaFiles.any { !matchesViewerFilter(it.path, hiddenFilter) } ||
             getCurrentMedia().any { !matchesViewerFilter(it.path, hiddenFilter) }
-        if (mPath.isNotEmpty() && config.filterHiddenOnly && hasFilteredMedia) {
+        if (mPath.isNotEmpty() && hasFilteredMedia) {
             stopSlideshow()
             mRandomSlideshowStopped = false
             mPrevHashcode = 0
@@ -266,6 +270,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             if (isFinishing) {
                 return
             }
+        }
+
+        if (mIsViewerInitialized && mPath.isNotEmpty() && mRequestedHiddenMediaState != hiddenFilterState()) {
+            refreshViewPager(true)
         }
 
         initBottomActions()
@@ -491,12 +499,13 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initContinue() {
+        mIsViewerInitialized = true
         if (!matchesViewerFilter(mPath)) {
             mMediaFiles.clear()
             finish()
             return
         }
-        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+        if (intent.action == Intent.ACTION_VIEW) {
             mMediaFiles = mMediaFiles.filterTo(ArrayList()) { it.path == mPath }
         }
         if (intent.extras?.containsKey(IS_VIEW_INTENT) == true) {
@@ -841,7 +850,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
             refreshMenuItems()
             callback?.invoke()
-            if (config.filterHiddenOnly && !matchesViewerFilter(it)) {
+            if (!matchesViewerFilter(it)) {
                 stopSlideshow()
                 mRandomSlideshowStopped = false
                 mPrevHashcode = 0
@@ -1318,7 +1327,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         return if (media.isEmpty()) {
             mMediaFiles.clear()
             mSlideshowMedia.clear()
-            if (!config.filterHiddenOnly) {
+            if (!config.isHiddenMediaFilteringActive) {
                 deleteDirectoryIfEmpty()
             }
             finish()
@@ -1344,6 +1353,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
 
         RenameItemDialog(this, oldPath) {
+            config.remapUserHiddenPaths(oldPath, it)
             getCurrentMedia().getOrNull(mPos)?.apply {
                 path = it
                 name = it.getFilenameFromPath()
@@ -1356,26 +1366,27 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
     }
 
-    private fun hiddenFilterState() = Triple(
-        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
-    )
+    private fun hiddenFilterState() = getHiddenMediaState()
 
     private fun matchesViewerFilter(path: String, hiddenFilter: HiddenMediaFilter = getHiddenMediaFilter()): Boolean {
         // An explicit external view is limited to its requested target, never its siblings.
-        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+        if (intent.action == Intent.ACTION_VIEW) {
             return path == mPath
         }
         return hiddenFilter.matches(path)
     }
 
     private fun refreshViewPager(refetchPosition: Boolean = false) {
-        if (config.filterHiddenOnly && intent.action == Intent.ACTION_VIEW) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            mRequestedHiddenMediaState = hiddenFilterState()
             gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = refetchPosition)
             return
         }
         val filterState = hiddenFilterState()
+        val hasPolicyChanged = mRequestedHiddenMediaState != filterState
+        mRequestedHiddenMediaState = filterState
         val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
-        if (!isRandomSorting || isExternalIntent()) {
+        if (hasPolicyChanged || !isRandomSorting || isExternalIntent()) {
             GetMediaAsynctask(applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll) {
                 if (filterState == hiddenFilterState()) {
                     gotMedia(it, refetchViewPagerPosition = refetchPosition)
@@ -1412,9 +1423,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
         mPrevHashcode = visible.hashCode()
         mMediaFiles = visible
-        if (config.filterHiddenOnly) {
-            mSlideshowMedia = mSlideshowMedia.filter { matchesViewerFilter(it.path, hiddenFilter) }.toMutableList()
-        }
+        mSlideshowMedia = mSlideshowMedia.filter { matchesViewerFilter(it.path, hiddenFilter) }.toMutableList()
 
         mPos = if (refetchViewPagerPosition || mPos == -1) {
             getPositionInList(visible).coerceIn(0, visible.lastIndex)
@@ -1451,7 +1460,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun deleteDirectoryIfEmpty() {
-        if (config.deleteEmptyFolders) {
+        if (config.deleteEmptyFolders && !config.isHiddenMediaFilteringActive) {
             val fileDirItem = FileDirItem(mDirectory, mDirectory.getFilenameFromPath(), File(mDirectory).isDirectory)
             if (!fileDirItem.isDownloadsFolder() && fileDirItem.isDirectory) {
                 ensureBackgroundThread {

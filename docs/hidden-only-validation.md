@@ -1,4 +1,9 @@
-# Hidden-only filter validation
+# Hidden-only filter validation (historical first release)
+
+This report describes `hidden-only-v1.14.2-1`, before explicit user-intent
+tracking. For the new default source policy, see `user-hidden-items.md` and
+`user-hidden-validation.md`. Historical results below are not reused as proof
+of the new policy.
 
 ## Build and source checks
 

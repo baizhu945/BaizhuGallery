@@ -915,6 +915,10 @@ class SettingsActivity : SimpleActivity() {
                 put(INCLUDED_FOLDERS, TextUtils.join(",", config.includedFolders))
                 put(EXCLUDED_FOLDERS, TextUtils.join(",", config.excludedFolders))
                 put(SHOW_HIDDEN_MEDIA, config.showHiddenMedia)
+                val hiddenPaths = config.userHiddenPaths
+                put(USER_HIDDEN_FILES, Gson().toJson(hiddenPaths.files))
+                put(USER_HIDDEN_FOLDERS, Gson().toJson(hiddenPaths.folders))
+                put(INCLUDE_OTHER_HIDDEN, config.includeOtherHidden)
                 put(FILE_LOADING_PRIORITY, config.fileLoadingPriority)
                 put(AUTOPLAY_VIDEOS, config.autoplayVideos)
                 put(REMEMBER_LAST_VIDEO_POSITION, config.rememberLastVideoPosition)
@@ -1040,6 +1044,16 @@ class SettingsActivity : SimpleActivity() {
             }
         }
 
+        try {
+            config.importUserHiddenPaths(
+                configValues[USER_HIDDEN_FILES]?.toString(),
+                configValues[USER_HIDDEN_FOLDERS]?.toString()
+            )
+        } catch (e: Exception) {
+            // Do not partially replace trusted paths with malformed backup data.
+            showErrorToast(e)
+        }
+
         for ((key, value) in configValues) {
             when (key) {
                 TEXT_COLOR -> config.textColor = value.toInt()
@@ -1062,6 +1076,7 @@ class SettingsActivity : SimpleActivity() {
                 INCLUDED_FOLDERS -> config.addIncludedFolders(value.toStringSet())
                 EXCLUDED_FOLDERS -> config.addExcludedFolders(value.toStringSet())
                 SHOW_HIDDEN_MEDIA -> config.showHiddenMedia = value.toBoolean()
+                INCLUDE_OTHER_HIDDEN -> config.includeOtherHidden = value.toBoolean()
                 FILE_LOADING_PRIORITY -> config.fileLoadingPriority = value.toInt()
                 AUTOPLAY_VIDEOS -> config.autoplayVideos = value.toBoolean()
                 REMEMBER_LAST_VIDEO_POSITION -> config.rememberLastVideoPosition = value.toBoolean()

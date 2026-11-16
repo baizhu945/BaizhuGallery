@@ -6,6 +6,14 @@ This is a fork-only change: the issue has no `help wanted` label, and no upstrea
 pull request is being proposed. The Gallery contribution guide and linked
 Fossify General-Discussion contribution rules apply.
 
+## Current default: hidden by you
+
+Hidden-media browsing now defaults to items you explicitly hid in this app or
+manually claimed. Unknown system/app/legacy hidden assets are excluded unless
+**Other hidden** is explicitly enabled. See
+[Hidden by you: policy and migration](user-hidden-items.md) for claiming older
+photos/folders without modifying them. No size-based origin guessing is used.
+
 ## Usage
 
 Open the overflow menu in the folder overview or media list and select
@@ -14,11 +22,12 @@ The checkmark indicates the active filter; selecting it again removes the
 filter. The option also exists when Gallery is used as a media picker.
 
 The filter intersects with **Filter media** (images, videos, GIFs, RAW, SVG,
-portraits). It changes the displayed subset, not the files themselves. A file
-matches if its name or an ancestor directory starts with a dot, or an exact
-`.nomedia` marker exists in its containing directory or an ancestor.
-`.nomedia.bak` is not a marker. Explicitly including a directory affects
-discovery, not the physical hidden classification.
+portraits). It changes the displayed subset, not the files themselves. Physical
+hiddenness means a dot-prefixed name/ancestor, or an exact `.nomedia` marker in
+the containing directory or an ancestor. `.nomedia.bak` is not a marker. Matching
+also requires user intent (or explicit **Other hidden** opt-in) and the existing
+hidden-media authorization. Explicitly including a directory affects discovery,
+not hidden ownership.
 
 Existing excluded-directory and protected-folder rules remain in force.
 Discovery uses the existing remembered/indexed/included folders; this is not
@@ -89,10 +98,11 @@ No Gradle/dependency/SDK configuration or quality baseline is changed.
 bash tests/hidden-media-filter/run.sh
 ```
 
-The standalone runner compiles the actual production classifier with `kotlinc`
-and needs no additional test dependency. It contains 27 classifier checks and
-one explicitly harness-only composition check. The upstream Gradle unit-test
-task currently has no test sources; a `NO-SOURCE` result is not a JUnit pass.
+The standalone runner compiles the actual production classifier and user-intent
+matcher with `kotlinc` and needs no additional test dependency. The upstream
+Gradle unit-test task currently has no test sources; a `NO-SOURCE` result is not
+a JUnit pass.
 
-Fresh build and device verification results are recorded in
-`docs/hidden-only-validation.md`.
+Current policy verification is recorded in `docs/user-hidden-validation.md`.
+`docs/hidden-only-validation.md` preserves the earlier physical-hidden-only
+version's verification, not current origin-policy test results.

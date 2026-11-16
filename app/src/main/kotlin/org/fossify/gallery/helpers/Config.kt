@@ -5,11 +5,13 @@ import android.content.res.Configuration
 import android.os.Environment
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import org.fossify.commons.extensions.isExternalStorageManager
 import org.fossify.commons.helpers.BaseConfig
 import org.fossify.commons.helpers.PROTECTION_PATTERN
 import org.fossify.commons.helpers.SORT_BY_DATE_MODIFIED
 import org.fossify.commons.helpers.SORT_DESCENDING
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
+import org.fossify.commons.helpers.isRPlus
 import org.fossify.gallery.R
 import org.fossify.gallery.models.AlbumCover
 import java.util.Arrays
@@ -17,7 +19,108 @@ import java.util.Locale
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
+        // Config instances share the same preferences, so the lock must also be shared.
+        private val hiddenRegistryLock = Any()
         fun newInstance(context: Context) = Config(context)
+    }
+
+    val userHiddenFiles: Set<String>
+        get() = synchronized(hiddenRegistryLock) { readUserHiddenPaths(USER_HIDDEN_FILES) }
+
+    val userHiddenFolders: Set<String>
+        get() = synchronized(hiddenRegistryLock) { readUserHiddenPaths(USER_HIDDEN_FOLDERS) }
+
+    val userHiddenPaths: UserHiddenPaths
+        get() = synchronized(hiddenRegistryLock) {
+            UserHiddenPaths(readUserHiddenPaths(USER_HIDDEN_FILES), readUserHiddenPaths(USER_HIDDEN_FOLDERS))
+        }
+
+    var includeOtherHidden: Boolean
+        get() = synchronized(hiddenRegistryLock) { prefs.getBoolean(INCLUDE_OTHER_HIDDEN, false) }
+        set(value) = synchronized(hiddenRegistryLock) {
+            if (prefs.getBoolean(INCLUDE_OTHER_HIDDEN, false) != value) {
+                prefs.edit().putBoolean(INCLUDE_OTHER_HIDDEN, value)
+                    .putLong(HIDDEN_REGISTRY_REVISION, hiddenRegistryRevision + 1).apply()
+            }
+        }
+
+    val hiddenRegistryRevision: Long
+        get() = synchronized(hiddenRegistryLock) { prefs.getLong(HIDDEN_REGISTRY_REVISION, 0L) }
+
+    val isHiddenMediaFilteringActive: Boolean
+        get() = filterHiddenOnly || !includeOtherHidden || !(showHiddenMedia || temporarilyShowHidden) ||
+            (isRPlus() && !isExternalStorageManager())
+
+    private fun readUserHiddenPaths(key: String): Set<String> =
+        prefs.getStringSet(key, emptySet()).orEmpty().toSet()
+
+    private fun updateUserHiddenPaths(update: (MutableSet<String>, MutableSet<String>) -> Unit) {
+        synchronized(hiddenRegistryLock) {
+            val oldFiles = readUserHiddenPaths(USER_HIDDEN_FILES)
+            val oldFolders = readUserHiddenPaths(USER_HIDDEN_FOLDERS)
+            val files = oldFiles.toMutableSet()
+            val folders = oldFolders.toMutableSet()
+            update(files, folders)
+            if (files != oldFiles || folders != oldFolders) {
+                prefs.edit().putStringSet(USER_HIDDEN_FILES, files).putStringSet(USER_HIDDEN_FOLDERS, folders)
+                    .putLong(HIDDEN_REGISTRY_REVISION, hiddenRegistryRevision + 1).apply()
+            }
+        }
+    }
+
+    private fun normalizedUserHiddenPaths(paths: Collection<String>) =
+        paths.map(::normalizeUserHiddenPath).filter { it.isNotEmpty() }.toSet()
+
+    fun addUserHiddenFiles(paths: Collection<String>) = updateUserHiddenPaths { files, _ ->
+        files.addAll(normalizedUserHiddenPaths(paths))
+    }
+
+    fun addUserHiddenFolders(paths: Collection<String>) = updateUserHiddenPaths { _, folders ->
+        folders.addAll(normalizedUserHiddenPaths(paths))
+    }
+
+    fun removeUserHiddenFiles(paths: Collection<String>) = updateUserHiddenPaths { files, _ ->
+        files.removeAll(normalizedUserHiddenPaths(paths))
+    }
+
+    fun removeUserHiddenFolders(paths: Collection<String>) = updateUserHiddenPaths { _, folders ->
+        folders.removeAll(normalizedUserHiddenPaths(paths))
+    }
+
+    fun remapUserHiddenPaths(oldPath: String, newPath: String) = updateUserHiddenPaths { files, folders ->
+        val old = normalizeUserHiddenPath(oldPath)
+        val new = normalizeUserHiddenPath(newPath)
+        if (old.isNotEmpty() && new.isNotEmpty() && old != new) {
+            for (paths in listOf(files, folders)) {
+                val mapped = paths.filter { isUserHiddenPathWithin(it, old) }.associateWith {
+                    val suffix = it.removePrefix(old)
+                    if (suffix.isEmpty()) new else new.trimEnd('/') +
+                        (if (old == "/") "/$suffix" else suffix)
+                }
+                paths.removeAll(mapped.keys)
+                paths.addAll(mapped.values.map(::normalizeUserHiddenPath))
+            }
+        }
+    }
+
+    fun removeUserHiddenPath(path: String, recursive: Boolean = false) = updateUserHiddenPaths { files, folders ->
+        val normalized = normalizeUserHiddenPath(path)
+        if (normalized.isNotEmpty()) {
+            for (paths in listOf(files, folders)) {
+                paths.removeAll { it == normalized || (recursive && isUserHiddenPathWithin(it, normalized)) }
+            }
+        }
+    }
+
+    /** Import both sets atomically. Missing keys in older backups leave existing trust untouched. */
+    fun importUserHiddenPaths(filesJson: String?, foldersJson: String?) {
+        val type = object : TypeToken<Set<String>>() {}.type
+        val files = filesJson?.let { normalizedUserHiddenPaths(Gson().fromJson<Set<String>>(it, type)) }
+        val folders = foldersJson?.let { normalizedUserHiddenPaths(Gson().fromJson<Set<String>>(it, type)) }
+        updateUserHiddenPaths { currentFiles, currentFolders ->
+            files?.let { currentFiles.clear(); currentFiles.addAll(it) }
+            folders?.let { currentFolders.clear(); currentFolders.addAll(it) }
+        }
     }
 
     var directorySorting: Int

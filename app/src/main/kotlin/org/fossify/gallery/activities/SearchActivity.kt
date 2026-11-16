@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.RecyclerView
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.gallery.R
@@ -139,9 +138,7 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
         }
     }
 
-    private fun hiddenFilterState() = Triple(
-        config.filterHiddenOnly, config.shouldShowHidden, !isRPlus() || isExternalStorageManager()
-    )
+    private fun hiddenFilterState() = getHiddenMediaState()
 
     private fun filterHiddenMedia(media: ArrayList<ThumbnailItem>): ArrayList<ThumbnailItem> {
         val hiddenFilter = getHiddenMediaFilter()
@@ -295,6 +292,11 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     override fun refreshItems() {
+        mCurrAsyncTask?.stopFetching()
+        mRequestGeneration++
+        mQueryGeneration++
+        mAllMedia = filterHiddenMedia(mAllMedia)
+        getMediaAdapter()?.updateMedia(arrayListOf())
         startAsyncTask(true)
     }
 
@@ -335,7 +337,7 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
                 val useRecycleBin = config.useRecycleBin
                 filtered.forEach {
                     if (it.path.startsWith(recycleBinPath) || !useRecycleBin) {
-                        deleteDBPath(it.path)
+                        deleteDBPath(it.path, forgetUserHidden = true)
                     }
                 }
             }

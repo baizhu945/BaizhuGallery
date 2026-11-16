@@ -43,6 +43,17 @@
     <!-- Filter -->
     <string name="filter_media">Filter media</string>
     <string name="show_only_hidden_items">Hidden only</string>
+    <string name="include_other_hidden">Other hidden</string>
+    <string name="no_my_hidden_media">No matching items in My hidden. Turn on Other hidden to find and claim previously hidden items.</string>
+    <string name="other_hidden_description">By default, hidden views show only items you hide or claim. Other hidden items may include system and app images. Select your previously hidden photos or folders and choose Claim hidden, then turn Other hidden off.</string>
+    <string name="claim_hidden">Claim hidden</string>
+    <string name="forget_hidden_claim">Forget claim</string>
+    <string name="claim_hidden_folder_description">Add these hidden folders to My hidden? Ordinary photos hidden by these folders will be included. Independently hidden files and subfolders still need their own claim.</string>
+    <string name="forget_hidden_description">Remove the selected claims? The files will stay hidden on disk. They may disappear from the default hidden view unless a parent folder is still claimed.</string>
+    <string name="my_hidden_claimed">Added to My hidden</string>
+    <string name="my_hidden_forgotten">Claims removed</string>
+    <string name="hidden_name_conflict">Name exists. Both files kept.</string>
+    <string name="hidden_transfer_reclaim_notice">Transferred hidden items may need Claim hidden at their destination. Other hidden lets you find them without guessing their new paths.</string>
     <string name="images">Images</string>
     <string name="videos">Videos</string>
     <string name="gifs">GIFs</string>

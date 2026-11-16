@@ -90,6 +90,7 @@ class MediaFetcher(val context: Context, private val applyHiddenFilter: Boolean 
         return try {
             val OTGPath = context.config.OTGPath
             val folders = getLatestFileFolders()
+            folders.addAll(getRegisteredFoldersToScan())
             folders.addAll(arrayListOf(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString(),
                 "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)}/Camera",
@@ -140,6 +141,19 @@ class MediaFetcher(val context: Context, private val applyHiddenFilter: Boolean 
         } catch (e: Exception) {
             ArrayList()
         }
+    }
+
+    private fun getRegisteredFoldersToScan(): Set<String> {
+        val paths = context.config.userHiddenPaths
+        val folders = paths.files.mapTo(LinkedHashSet()) { it.getParentPath() }
+        if (context.config.shouldShowHidden && (!isRPlus() || isExternalStorageManager())) {
+            paths.folders.forEach { root ->
+                File(root).walkTopDown().onEnter { directory ->
+                    !shouldStop && hiddenMediaFilter.matches("${directory.path}/gallery-origin-probe.jpg")
+                }.filter { it.isDirectory }.forEach { folders.add(it.path) }
+            }
+        }
+        return folders
     }
 
     private fun getLatestFileFolders(): LinkedHashSet<String> {
@@ -276,6 +290,11 @@ class MediaFetcher(val context: Context, private val applyHiddenFilter: Boolean 
             addFolder(foldersToScan, it)
         }
 
+        // Explicit intent must remain discoverable without MediaStore or old cache history.
+        val userHidden = config.userHiddenPaths
+        userHidden.files.mapTo(foldersToScan) { it.getParentPath() }
+        userHidden.folders.forEach { addFolder(foldersToScan, it) }
+
         return foldersToScan.toMutableSet() as LinkedHashSet<String>
     }
 
@@ -359,6 +378,10 @@ class MediaFetcher(val context: Context, private val applyHiddenFilter: Boolean 
 
             if (isSvg && filterMedia and TYPE_SVGS == 0)
                 continue
+
+            if (applyHiddenFilter && !hiddenMediaFilter.matches(path)) {
+                continue
+            }
 
             val filename = file.name
             if (!showHidden && filename.startsWith('.'))
