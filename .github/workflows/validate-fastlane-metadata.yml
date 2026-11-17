@@ -3,17 +3,17 @@ name: Fastlane metadata validation
 on:
   push:
     branches: [main]
-    paths: ["fastlane/**", ".github/workflows/validate-fastlane-metadata.yml"]
+    paths: ["fastlane/**", "gradle.properties", ".github/workflows/validate-fastlane-metadata.yml"]
   pull_request:
     branches: [main]
-    paths: ["fastlane/**", ".github/workflows/validate-fastlane-metadata.yml"]
+    paths: ["fastlane/**", "gradle.properties", ".github/workflows/validate-fastlane-metadata.yml"]
 
 permissions:
   contents: read
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,13 +21,18 @@ jobs:
       - name: Check current metadata (no store submission)
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
+          codes = re.findall(r'^VERSION_CODE=([1-9][0-9]*)$', Path('gradle.properties').read_text(), re.MULTILINE)
+          assert len(codes) == 1, 'Expected exactly one positive VERSION_CODE'
+          base = int(codes[0])
+          assert base + 4 <= 2100000000, base
           root = Path('fastlane/metadata/android')
           for locale in ('en-US', 'zh-CN'):
               for name, limit in (('title.txt', 30), ('short_description.txt', 80), ('full_description.txt', 4000)):
                   text = (root / locale / name).read_text().strip()
                   assert 0 < len(text) <= limit, (locale, name)
-              for code in range(45, 50):
+              for code in range(base, base + 5):
                   text = (root / locale / 'changelogs' / f'{code}.txt').read_text().strip()
                   assert 0 < len(text) <= 500, (locale, code)
           assert 'package_name("org.fossifymigration.baizhu.gallery")' in Path('fastlane/Appfile').read_text()

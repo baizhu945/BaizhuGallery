@@ -9,9 +9,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -21,9 +25,48 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Test CI and release validation guards
+        run: |
+          set -euo pipefail
+          python3 -B -m unittest discover -s tests/ci -p '*Test.py' -v
+          python3 -B -m unittest discover -s tests/ci-release-validation -v
+      - name: Install pinned Kotlin compiler for standalone tests
+        run: bash .github/scripts/setup-kotlin.sh
+      - name: Run actual policy and filesystem tests
+        run: |
+          set -euo pipefail
+          bash tests/hidden-media-filter/run.sh
+          bash tests/bulk-operations/run.sh
+      - name: Test Commons compatibility guards
+        run: |
+          set -euo pipefail
+          classes=$(mktemp -d "$RUNNER_TEMP/compatibility-tests.XXXXXXXX")
+          javac -d "$classes" \
+            buildSrc/src/main/java/org/baizhu/gallery/build/ConstantPoolRewriter.java \
+            buildSrc/src/test/java/org/baizhu/gallery/build/ConstantPoolRewriterSelfTest.java
+          java -cp "$classes" org.baizhu.gallery.build.ConstantPoolRewriterSelfTest
       - uses: android-actions/setup-android@v3
-      # The inherited Gradle JUnit task is currently NO-SOURCE; standalone helper
-      # runners are documented separately and are not mislabelled as JUnit coverage.
-      - run: >-
+        with:
+          # The action defaults to obsolete `tools`, which is no longer published.
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Verify build environment
+        run: |
+          set -euo pipefail
+          java -version
+          test -f "$ANDROID_HOME/platforms/android-36/android.jar"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" version
+      # Gradle's inherited JUnit task is NO-SOURCE; real standalone tests run above.
+      - name: Build and run static checks
+        run: >-
           ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4096m
+          -Pkotlin.daemon.jvmargs=-Xmx1536m -Pandroid.builder.sdkDownload=false
           :app:assembleFossDebug :app:testFossDebugUnitTest detekt lint :app:assembleFossRelease
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: app/build/reports/
+          if-no-files-found: ignore
+          retention-days: 7

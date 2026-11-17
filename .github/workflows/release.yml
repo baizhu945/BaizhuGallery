@@ -1,7 +1,6 @@
 name: Release
 
-# Opt-in only: first configure this independent project's release signing secrets.
-# Publishing a locally signed tag must not launch an unconfigured signing job.
+# Manual dispatch uses this workflow's checks even when building an older tag.
 on:
   workflow_dispatch:
     inputs:
@@ -20,33 +19,103 @@ concurrency:
 jobs:
   release:
     if: github.repository == 'baizhu945/BaizhuGallery'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: write
     env:
       RELEASE_TAG: ${{ inputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag }}
-          persist-credentials: false
-      - name: Validate release identity
+      - name: Resolve tag and reject existing releases before building
+        id: preflight
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          version=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2-)
-          code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
-          test "$RELEASE_TAG" = "v$version"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          grep -qx 'APP_ID=org.fossifymigration.baizhu.gallery' gradle.properties
-          if [[ "$version" == '1.15.0' ]]; then test "$code" = 45; fi
-          test -f "fastlane/metadata/android/en-US/changelogs/$code.txt"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import urllib.error
+          import urllib.request
+
+          tag = os.environ['RELEASE_TAG']
+          if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag):
+              raise SystemExit('Expected a tag such as v1.15.0')
+          repo = os.environ['GITHUB_REPOSITORY']
+          ref = f'refs/tags/{tag}'
+          refs = dict(line.split()[::-1] for line in subprocess.check_output(
+              ['git', 'ls-remote', '--tags', f'https://github.com/{repo}.git', ref, ref + '^{}'],
+              text=True).splitlines())
+          if ref not in refs:
+              raise SystemExit(f'Missing actual tag: {ref}')
+          sha = refs.get(ref + '^{}', refs[ref])
+          if not re.fullmatch(r'[0-9a-f]{40}', sha):
+              raise SystemExit('Invalid tag commit SHA')
+          request = urllib.request.Request(
+              f'{os.environ["GITHUB_API_URL"]}/repos/{repo}/releases/tags/{tag}',
+              headers={'Authorization': f'Bearer {os.environ["GH_TOKEN"]}',
+                       'Accept': 'application/vnd.github+json'})
+          try:
+              with urllib.request.urlopen(request) as response:
+                  json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              error.close()
+          else:
+              raise SystemExit('Release already exists; never replace its assets')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'sha={sha}\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.preflight.outputs.sha }}
+          persist-credentials: false
+      - name: Validate checked-out release identity and changelogs
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.preflight.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          properties = Path('gradle.properties').read_text()
+          def property_value(key):
+              values = re.findall(rf'^{key}=(.*)$', properties, re.MULTILINE)
+              if len(values) != 1:
+                  raise SystemExit(f'Expected exactly one {key}')
+              return values[0]
+          version = property_value('VERSION_NAME')
+          code = property_value('VERSION_CODE')
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version), version
+          assert os.environ['RELEASE_TAG'] == f'v{version}', version
+          assert property_value('APP_ID') == 'org.fossifymigration.baizhu.gallery'
+          assert re.fullmatch(r'[1-9][0-9]*', code), code
+          base = int(code)
+          assert base + 4 <= 2100000000, base
+          if version == '1.15.0':
+              assert base == 45, base
+          assert 'package_name("org.fossifymigration.baizhu.gallery")' in Path('fastlane/Appfile').read_text()
+          for locale in ('en-US', 'zh-CN'):
+              for number in range(base, base + 5):
+                  text = Path(f'fastlane/metadata/android/{locale}/changelogs/{number}.txt').read_text().strip()
+                  assert 0 < len(text) <= 500, (locale, number)
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          log-accepted-android-sdk-licenses: false
       - name: Build signed release APKs
         shell: bash
         env:
@@ -64,37 +133,88 @@ jobs:
           trap 'shred -u "$SIGNING_STORE_FILE"' EXIT
           umask 077
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SIGNING_STORE_FILE"
-          ./gradlew --no-daemon assembleFossRelease -PABI_SPLITS=true
+          ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4096m \
+            -Pkotlin.daemon.jvmargs=-Xmx1024m -Pandroid.builder.sdkDownload=false \
+            assembleFossRelease -PABI_SPLITS=true
       - name: Verify release artifacts
         shell: bash
         run: |
           set -euo pipefail
-          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
-          shopt -s nullglob
-          apks=(app/build/outputs/apk/foss/release/*.apk)
-          test "${#apks[@]}" = 5
-          code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
-          version=${RELEASE_TAG#v}
-          for apk in "${apks[@]}"; do
-            [[ "$apk" == *-release.apk && "$apk" != *unsigned* ]]
-            "$tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/apk-signature.txt"
-            ! grep -q 'CN=Android Debug' "$RUNNER_TEMP/apk-signature.txt"
-            badging=$("$tools/aapt" dump badging "$apk")
-            grep -q "package: name='org.fossifymigration.baizhu.gallery'" <<< "$badging"
-            grep -q "versionName='$version'" <<< "$badging"
-            ! grep -q '^application-debuggable' <<< "$badging"
-            apk_code=$(grep '^package:' <<< "$badging" | grep -o "versionCode='[0-9]*'" | tr -cd '0-9')
-            (( apk_code >= code && apk_code <= code + 4 ))
-          done
-      - name: Publish signed APKs only
+          # Keep verification workflow-owned: old tags need not contain new CI scripts.
+          python3 - <<'PY'
+          # BEGIN RELEASE VERIFIER (also exercised by pure-Python tests)
+          import hashlib
+          import os
+          import re
+          import subprocess
+          import zipfile
+          from pathlib import Path
+
+          CERTIFICATE_SHA256 = '03723266d53edf378d9f44f5bea3fb1027bc646eb69bbdd85d40f62babe55371'
+          ABIS = ('armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64')
+
+          def verify_artifacts(directory, tools, base, version):
+              expected = {f'gallery-{base}-foss-release.apk': (base, None)}
+              expected.update({f'gallery-{base + offset}-foss-{abi}-release.apk': (base + offset, abi)
+                               for offset, abi in enumerate(ABIS, 1)})
+              assert {p.name for p in directory.glob('*.apk')} == set(expected), 'Unexpected APK filenames'
+              native = {}
+              for name, (code, abi) in expected.items():
+                  apk = directory / name
+                  signature = subprocess.check_output(
+                      [str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)], text=True)
+                  digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest: (\S+)\s*$', signature, re.MULTILINE)
+                  assert len(digests) == 1 and digests[0].lower().replace(':', '') == CERTIFICATE_SHA256, name
+                  assert 'CN=Android Debug' not in signature, name
+                  badging = subprocess.check_output([str(tools / 'aapt'), 'dump', 'badging', str(apk)], text=True)
+                  packages = re.findall(r'^package: (.+)$', badging, re.MULTILINE)
+                  assert len(packages) == 1, name
+                  fields = dict(re.findall(r"([A-Za-z]+)='([^']*)'", packages[0]))
+                  assert fields.get('name') == 'org.fossifymigration.baizhu.gallery', name
+                  assert fields.get('versionCode') == str(code), name
+                  assert fields.get('versionName') == version, name
+                  assert not re.search(r'^application-debuggable(?:\s|$)', badging, re.MULTILINE), name
+                  with zipfile.ZipFile(apk) as archive:
+                      entries = [info.filename for info in archive.infolist()]
+                      assert len(entries) == len(set(entries)), f'Duplicate ZIP entries: {name}'
+                      libraries = {entry: hashlib.sha256(archive.read(entry)).hexdigest()
+                                   for entry in entries if entry.startswith('lib/') and not entry.endswith('/')}
+                  assert libraries and all(re.fullmatch(r'lib/[^/]+/[^/]+\.so', entry) for entry in libraries), name
+                  assert {entry.split('/')[1] for entry in libraries} == ({abi} if abi else set(ABIS)), name
+                  native[abi] = libraries
+              for abi in ABIS:
+                  assert native[abi] == {entry: digest for entry, digest in native[None].items()
+                                         if entry.startswith(f'lib/{abi}/')}, f'Universal native content mismatch: {abi}'
+              manifest = ''.join(f'{hashlib.sha256((directory / name).read_bytes()).hexdigest()}  {name}\n'
+                                 for name in sorted(expected))
+              (directory / 'SHA256SUMS').write_text(manifest)
+
+          if __name__ == '__main__':
+              properties = dict(line.split('=', 1) for line in Path('gradle.properties').read_text().splitlines()
+                                if '=' in line and not line.startswith('#'))
+              verify_artifacts(Path('app/build/outputs/apk/foss/release'),
+                               Path(os.environ['ANDROID_HOME']) / 'build-tools/36.0.0',
+                               int(properties['VERSION_CODE']), os.environ['RELEASE_TAG'][1:])
+          # END RELEASE VERIFIER
+          PY
+      - name: Publish signed APKs and checksums only
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ steps.preflight.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          # Do not publish if the tag moved while the build was running.
+          refs=$(git ls-remote --tags "https://github.com/$GITHUB_REPOSITORY.git" \
+            "refs/tags/$RELEASE_TAG" "refs/tags/$RELEASE_TAG^{}")
+          actual=$(awk '$2 ~ /\^\{\}$/ { print $1; found=1 } END { if (!found) print first } NR==1 { first=$1 }' <<< "$refs")
+          test "$actual" = "$EXPECTED_SHA"
           code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
+          # gh release create fails if a release already exists; never use upload --clobber.
           gh release create "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "Gallery ${RELEASE_TAG#v}" \
             --notes-file "fastlane/metadata/android/en-US/changelogs/$code.txt" \
-            app/build/outputs/apk/foss/release/*-release.apk
+            app/build/outputs/apk/foss/release/*-release.apk \
+            app/build/outputs/apk/foss/release/SHA256SUMS
