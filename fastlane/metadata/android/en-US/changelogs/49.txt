@@ -1,0 +1,4 @@
+1.15.0
+• First independent BaizhuGallery release, based on Fossify Gallery.
+• App name: Gallery. Separate application ID: org.fossifymigration.baizhu.gallery.
+• Project support and source links now point to BaizhuGallery.

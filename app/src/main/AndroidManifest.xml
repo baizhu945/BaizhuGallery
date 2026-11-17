@@ -33,8 +33,8 @@
         tools:node="remove" />
 
     <queries>
-        <package android:name="org.fossify.gallery.debug" />
-        <package android:name="org.fossify.gallery" />
+        <package android:name="org.fossifymigration.baizhu.gallery.debug" />
+        <package android:name="org.fossifymigration.baizhu.gallery" />
     </queries>
 
     <uses-feature
@@ -42,7 +42,7 @@
         android:required="false" />
 
     <application
-        android:name="org.fossify.gallery.App"
+        android:name="org.fossifymigration.baizhu.gallery.App"
         android:allowBackup="true"
         android:appCategory="image"
         android:icon="@mipmap/ic_launcher"
@@ -231,7 +231,7 @@
         </activity>
 
         <activity
-            android:name="org.fossify.gallery.activities.EditActivity"
+            android:name="org.fossifymigration.baizhu.gallery.activities.EditActivity"
             android:configChanges="orientation"
             android:exported="true"
             android:label="@string/basic_editor">
@@ -421,7 +421,7 @@
 
         <activity-alias
             android:name=".activities.SplashActivity.Light_blue"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_light_blue"
             android:roundIcon="@mipmap/ic_launcher_light_blue"
@@ -463,10 +463,10 @@
 
         <activity-alias
             android:name=".activities.SplashActivity.Green"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:roundIcon="@mipmap/ic_launcher"
+            android:icon="@mipmap/ic_launcher_green"
+            android:roundIcon="@mipmap/ic_launcher_green"
             android:targetActivity=".activities.SplashActivity">
 
             <intent-filter>

@@ -1,48 +1,15 @@
-fastlane documentation
-----
+# Inherited fastlane metadata
 
-# Installation
+The metadata, screenshots and automation in this directory were inherited from
+Fossify Gallery. Their presence is **not a published store listing** for
+BaizhuGallery, nor an affiliation with Fossify. They may describe upstream
+branding or earlier behavior and must not be presented as current store evidence.
 
-Make sure you have the latest version of the Xcode command line tools installed:
+[BaizhuGallery GitHub Releases](https://github.com/baizhu945/BaizhuGallery/releases)
+is the canonical download channel. See [independent release notes](../docs/independent-release.md)
+for package identity, migration warnings and Gradle Release signing instructions.
 
-```sh
-xcode-select --install
-```
-
-For _fastlane_ installation instructions, see [Installing _fastlane_](https://docs.fastlane.tools/#installing-fastlane)
-
-# Available Actions
-
-## Android
-
-### android test
-
-```sh
-[bundle exec] fastlane android test
-```
-
-Run unit & instrumentation tests
-
-### android deploy
-
-```sh
-[bundle exec] fastlane android deploy
-```
-
-Build & deploy AAB to Google Play (includes metadata)
-
-### android metadata
-
-```sh
-[bundle exec] fastlane android metadata
-```
-
-Push Play Store metadata
-
-----
-
-This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
-
-More information about _fastlane_ can be found on [fastlane.tools](https://fastlane.tools).
-
-The documentation of _fastlane_ can be found on [docs.fastlane.tools](https://docs.fastlane.tools).
+Inherited fastlane actions include `android test`, `android deploy` and
+`android metadata`. The latter two target Google Play; they are not the independent
+GitHub release procedure and must not be invoked assuming a store listing exists.
+For automation syntax see [fastlane documentation](https://docs.fastlane.tools/).

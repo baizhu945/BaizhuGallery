@@ -1,0 +1,4 @@
+1.15.0
+• 基于 Fossify Gallery 的首个 BaizhuGallery 独立发行版。
+• 应用名称为 Gallery，独立应用 ID 为 org.fossifymigration.baizhu.gallery。
+• 项目支持与源码链接改为 BaizhuGallery。

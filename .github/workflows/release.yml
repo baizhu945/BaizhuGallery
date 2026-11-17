@@ -1,18 +1,100 @@
 name: Release
 
+# Opt-in only: first configure this independent project's release signing secrets.
+# Publishing a locally signed tag must not launch an unconfigured signing job.
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - ".fossify/release-marker.txt"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (for example v1.15.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
 
 jobs:
-  call-release-workflow:
-    name: Release
-    uses: FossifyOrg/.github/.github/workflows/release.yml@main
-    with:
-      abi_apks: true
-      track: ${{ vars.GPLAY_TRACK || 'beta' }}
-      rollout: ${{ vars.GPLAY_ROLLOUT || '0.05' }}
-      validate_only: ${{ vars.GPLAY_DRY_RUN == 'true' }}
-    secrets: inherit
+  release:
+    if: github.repository == 'baizhu945/BaizhuGallery'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - name: Validate release identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2-)
+          code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
+          test "$RELEASE_TAG" = "v$version"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          grep -qx 'APP_ID=org.fossifymigration.baizhu.gallery' gradle.properties
+          if [[ "$version" == '1.15.0' ]]; then test "$code" = 45; fi
+          test -f "fastlane/metadata/android/en-US/changelogs/$code.txt"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build signed release APKs
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64}"
+          : "${SIGNING_KEY_ALIAS:?Missing SIGNING_KEY_ALIAS}"
+          : "${SIGNING_KEY_PASSWORD:?Missing SIGNING_KEY_PASSWORD}"
+          : "${SIGNING_STORE_PASSWORD:?Missing SIGNING_STORE_PASSWORD}"
+          export SIGNING_STORE_FILE="$RUNNER_TEMP/baizhu-release.keystore"
+          trap 'shred -u "$SIGNING_STORE_FILE"' EXIT
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SIGNING_STORE_FILE"
+          ./gradlew --no-daemon assembleFossRelease -PABI_SPLITS=true
+      - name: Verify release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/foss/release/*.apk)
+          test "${#apks[@]}" = 5
+          code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
+          version=${RELEASE_TAG#v}
+          for apk in "${apks[@]}"; do
+            [[ "$apk" == *-release.apk && "$apk" != *unsigned* ]]
+            "$tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/apk-signature.txt"
+            ! grep -q 'CN=Android Debug' "$RUNNER_TEMP/apk-signature.txt"
+            badging=$("$tools/aapt" dump badging "$apk")
+            grep -q "package: name='org.fossifymigration.baizhu.gallery'" <<< "$badging"
+            grep -q "versionName='$version'" <<< "$badging"
+            ! grep -q '^application-debuggable' <<< "$badging"
+            apk_code=$(grep '^package:' <<< "$badging" | grep -o "versionCode='[0-9]*'" | tr -cd '0-9')
+            (( apk_code >= code && apk_code <= code + 4 ))
+          done
+      - name: Publish signed APKs only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2-)
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Gallery ${RELEASE_TAG#v}" \
+            --notes-file "fastlane/metadata/android/en-US/changelogs/$code.txt" \
+            app/build/outputs/apk/foss/release/*-release.apk

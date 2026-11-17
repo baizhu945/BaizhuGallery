@@ -1,6 +1,6 @@
-package org.fossify.gallery.tests
+package org.fossifymigration.baizhu.gallery.tests
 
-import org.fossify.gallery.helpers.UserHiddenPaths
+import org.fossifymigration.baizhu.gallery.helpers.UserHiddenPaths
 
 fun runUserHiddenPathsTests() {
     var passed = 0

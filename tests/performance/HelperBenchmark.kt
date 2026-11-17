@@ -1,4 +1,4 @@
-package org.fossify.gallery.helpers
+package org.fossifymigration.baizhu.gallery.helpers
 
 import kotlin.system.measureNanoTime
 

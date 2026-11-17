@@ -1,4 +1,4 @@
-package org.fossify.gallery.extensions
+package org.fossifymigration.baizhu.gallery.extensions
 
 import java.io.File
 import java.nio.file.Files

@@ -3,6 +3,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
+import org.baizhu.gallery.build.CommonsCompatibilityRule
+import org.baizhu.gallery.build.CommonsCompatibilityTransform
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE
 
 plugins {
     alias(libs.plugins.android)
@@ -173,7 +176,17 @@ detekt {
     allRules = false
 }
 
+// Only Commons gets the marked artifact type; every AGP AAR path (including
+// compile/runtime/lint) must pass through compatibility before normal AAR processing.
 dependencies {
+    components.withModule<CommonsCompatibilityRule>("org.fossify:commons")
+    registerTransform(CommonsCompatibilityTransform::class) {
+        from.attribute(ARTIFACT_TYPE_ATTRIBUTE, "baizhu-commons-aar")
+            .attribute(CommonsCompatibilityRule.ATTRIBUTE, CommonsCompatibilityRule.ORIGINAL)
+        to.attribute(ARTIFACT_TYPE_ATTRIBUTE, "aar")
+            .attribute(CommonsCompatibilityRule.ATTRIBUTE, CommonsCompatibilityRule.COMPATIBLE)
+    }
+
     implementation(libs.fossify.commons)
     implementation(libs.androidx.print)
     implementation(libs.android.image.cropper)

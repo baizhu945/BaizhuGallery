@@ -1,9 +1,9 @@
-package org.fossify.gallery.tests
+package org.fossifymigration.baizhu.gallery.tests
 
 import java.io.File
 import java.nio.file.Files
-import org.fossify.gallery.helpers.HiddenMediaFilter
-import org.fossify.gallery.helpers.UserHiddenPaths
+import org.fossifymigration.baizhu.gallery.helpers.HiddenMediaFilter
+import org.fossifymigration.baizhu.gallery.helpers.UserHiddenPaths
 
 private class Fixture(val root: File) {
     fun file(path: String): File = File(root, path).also {

@@ -250,7 +250,7 @@
     <string name="slide">Geser</string>
     <string name="by_folder">Folder</string>
     <string name="cant_unhide_folder">Jika folder atau salah satu folder induknya memiliki titik di depan namanya, maka folder tersebut tersembunyi dan tidak dapat dimunculkan seperti ini. Anda harus menghapus titik dengan mengganti namanya.</string>
-    <string name="full_storage_permission_required">Fossify Gallery perlu akses penuh untuk menampilkan semua foto dan video. Buka Pengaturan &gt; Izin &gt; Foto dan video &gt; Izinkan semua.</string>
+    <string name="full_storage_permission_required">Gallery perlu akses penuh untuk menampilkan semua foto dan video. Buka Pengaturan &gt; Izin &gt; Foto dan video &gt; Izinkan semua.</string>
     <string name="playback_speed">Kecepatan pemutaran</string>
     <string name="file_is_malformed_or_corrupted">File rusak atau korup.</string>
     <string name="media_exceeds_device_capabilities">Media melebihi kemampuan perangkat.</string>

@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd)
-helper_dir="$project_dir/app/src/main/kotlin/org/fossify/gallery/helpers"
+helper_dir="$project_dir/app/src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers"
 helpers=("$helper_dir/HiddenMediaFilter.kt" "$helper_dir/UserHiddenPaths.kt" "$helper_dir/HiddenMediaState.kt")
 
 for helper in "${helpers[@]}"; do

@@ -1,0 +1,144 @@
+package org.fossifymigration.baizhu.gallery.activities
+
+import android.provider.MediaStore.Images
+import android.provider.MediaStore.Video
+import android.view.WindowManager
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import org.fossify.commons.activities.BaseSimpleActivity
+import org.fossify.commons.dialogs.FilePickerDialog
+import org.fossify.commons.extensions.*
+import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.commons.helpers.isPiePlus
+import org.fossifymigration.baizhu.gallery.R
+import org.fossifymigration.baizhu.gallery.dialogs.StoragePermissionRequiredDialog
+import org.fossifymigration.baizhu.gallery.extensions.config
+import org.fossifymigration.baizhu.gallery.helpers.BulkDeleteRequests
+import org.fossifymigration.baizhu.gallery.helpers.MediaChangeObserver
+import org.fossifymigration.baizhu.gallery.helpers.getPermissionsToRequest
+
+open class SimpleActivity : BaseSimpleActivity() {
+
+    private var dialog: AlertDialog? = null
+
+    internal val bulkDeleteRequests by lazy { BulkDeleteRequests(this) }
+    private val mediaChanges by lazy { MediaChangeObserver(this) }
+    private val observer get() = mediaChanges.observer
+
+    init {
+        // Activity fields are constructed before attachBaseContext. Register while CREATED,
+        // not before attachment or lazily after STARTED when launchers can no longer register.
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_CREATE) bulkDeleteRequests
+        })
+    }
+
+    override fun getAppIconIDs() = arrayListOf(
+        R.mipmap.ic_launcher_red,
+        R.mipmap.ic_launcher_pink,
+        R.mipmap.ic_launcher_purple,
+        R.mipmap.ic_launcher_deep_purple,
+        R.mipmap.ic_launcher_indigo,
+        R.mipmap.ic_launcher_blue,
+        R.mipmap.ic_launcher_light_blue,
+        R.mipmap.ic_launcher_cyan,
+        R.mipmap.ic_launcher_teal,
+        R.mipmap.ic_launcher_green,
+        R.mipmap.ic_launcher_light_green,
+        R.mipmap.ic_launcher_lime,
+        R.mipmap.ic_launcher_yellow,
+        R.mipmap.ic_launcher_amber,
+        R.mipmap.ic_launcher_orange,
+        R.mipmap.ic_launcher_deep_orange,
+        R.mipmap.ic_launcher_brown,
+        R.mipmap.ic_launcher_blue_grey,
+        R.mipmap.ic_launcher_grey_black
+    )
+
+    override fun getAppLauncherName() = getString(R.string.app_launcher_name)
+
+    // Used only by the explicitly labelled upstream FAQ/license screen.
+    // Commons prepends FossifyOrg, so independent links are handled by launchAbout().
+    override fun getRepositoryName() = "Gallery"
+
+    protected fun checkNotchSupport() {
+        if (isPiePlus()) {
+            val cutoutMode = when {
+                config.showNotch -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+            }
+
+            window.attributes.layoutInDisplayCutoutMode = cutoutMode
+            if (config.showNotch) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            }
+        }
+    }
+
+    protected fun registerFileUpdateListener() {
+        try {
+            contentResolver.registerContentObserver(Images.Media.EXTERNAL_CONTENT_URI, true, observer)
+            contentResolver.registerContentObserver(Video.Media.EXTERNAL_CONTENT_URI, true, observer)
+        } catch (ignored: Exception) {
+        }
+    }
+
+    protected fun unregisterFileUpdateListener() {
+        try {
+            contentResolver.unregisterContentObserver(observer)
+        } catch (ignored: Exception) {
+        }
+    }
+
+    protected fun showAddIncludedFolderDialog(callback: () -> Unit) {
+        FilePickerDialog(this, config.lastFilepickerPath, false, config.shouldShowHidden, false, true) {
+            config.lastFilepickerPath = it
+            config.addIncludedFolder(it)
+            callback()
+            ensureBackgroundThread {
+                scanPathRecursively(it)
+            }
+        }
+    }
+
+    protected fun requestMediaPermissions(enableRationale: Boolean = false, onGranted: () -> Unit) {
+        when {
+            hasAllPermissions(getPermissionsToRequest()) -> onGranted()
+            config.showPermissionRationale -> {
+                if (enableRationale) {
+                    showPermissionRationale()
+                } else {
+                    onPermissionDenied()
+                }
+            }
+
+            else -> {
+                handlePartialMediaPermissions(getPermissionsToRequest(), force = true) { granted ->
+                    if (granted) {
+                        onGranted()
+                    } else {
+                        config.showPermissionRationale = true
+                        showPermissionRationale()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showPermissionRationale() {
+        dialog?.dismiss()
+        StoragePermissionRequiredDialog(
+            activity = this,
+            onOkay = ::openDeviceSettings,
+            onCancel = ::onPermissionDenied
+        ) { dialog ->
+            this.dialog = dialog
+        }
+    }
+
+    private fun onPermissionDenied() {
+        toast(org.fossify.commons.R.string.no_storage_permissions)
+        finish()
+    }
+}

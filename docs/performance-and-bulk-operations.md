@@ -1,7 +1,9 @@
 # Performance pipeline and bulk-operation feedback
 
-Followup to the user-hidden policy fork, based on `79acc72c024cf57ca41540950f93588790146e85`.
-This remains an unofficial fork. No upstream pull request is proposed.
+BaizhuGallery's pipeline originated as a followup to the user-hidden policy work,
+based on `79acc72c024cf57ca41540950f93588790146e85`. This is now an independent
+project, not an official Fossify release; no upstream pull request is proposed.
+See [independent release](independent-release.md) for current identity and migration limits.
 
 ## What changed
 
@@ -103,5 +105,6 @@ checks are not Android SAF/native-permission tests. The existing Gradle JUnit ta
 has no sources; `NO-SOURCE` is not counted as executed unit tests.
 
 Measured device results, workload, before/after scope and remaining limitations
-are recorded in `docs/performance-validation.md`. No universal FPS/throughput or
+are recorded historically in `docs/performance-validation.md`, not rerun for
+1.15.0 by this documentation update. No universal FPS/throughput or
 "zero jank on all devices" claim is implied by static optimizations.

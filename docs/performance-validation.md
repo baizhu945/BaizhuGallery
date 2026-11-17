@@ -1,5 +1,9 @@
 # Performance and bulk-operation validation
 
+> Historical evidence: package IDs, hashes, dates and references below identify
+> prior releases, not BaizhuGallery 1.15.0. The independent identity does not
+> recertify this matrix; see [release/migration context](independent-release.md).
+
 Base: `79acc72c024cf57ca41540950f93588790146e85` (the user-hidden-policy release).
 
 ## Build / independent checks

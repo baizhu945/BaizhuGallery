@@ -7,7 +7,7 @@
         errorLine1="                    options.centerCrop()"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/MyWidgetProvider.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/MyWidgetProvider.kt"
             line="54"
             column="21"/>
     </issue>
@@ -18,7 +18,7 @@
         errorLine1="                    options.fitCenter()"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/MyWidgetProvider.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/MyWidgetProvider.kt"
             line="56"
             column="21"/>
     </issue>
@@ -29,7 +29,7 @@
         errorLine1="    private fun formatPlaybackSpeed(value: Float) = String.format(&quot;%.2f&quot;, value)"
         errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PlaybackSpeedFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PlaybackSpeedFragment.kt"
             line="133"
             column="53"/>
     </issue>
@@ -40,7 +40,7 @@
         errorLine1="        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Activity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Activity.kt"
             line="189"
             column="29"/>
     </issue>
@@ -51,7 +51,7 @@
         errorLine1="        intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION"
         errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Activity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Activity.kt"
             line="195"
             column="25"/>
     </issue>
@@ -62,7 +62,7 @@
         errorLine1="        intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION"
         errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Activity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Activity.kt"
             line="195"
             column="25"/>
     </issue>
@@ -73,7 +73,7 @@
         errorLine1="    val id = getIdentifier(&quot;status_bar_height&quot;, &quot;dimen&quot;, &quot;android&quot;)"
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Resources.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Resources.kt"
             line="17"
             column="14"/>
     </issue>
@@ -84,7 +84,7 @@
         errorLine1="    val id = getIdentifier(&quot;navigation_bar_height&quot;, &quot;dimen&quot;, &quot;android&quot;)"
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Resources.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Resources.kt"
             line="25"
             column="14"/>
     </issue>
@@ -95,7 +95,7 @@
         errorLine1="            launchChangeAppLanguageIntent()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/SettingsActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/SettingsActivity.kt"
             line="167"
             column="13"/>
     </issue>
@@ -139,7 +139,7 @@
         errorLine1="                    rotated.compress(Bitmap.CompressFormat.JPEG, 100, out)"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="235"
             column="21"/>
     </issue>
@@ -150,7 +150,7 @@
         errorLine1="class SplashActivity : BaseSplashActivity() {"
         errorLine2="      ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/SplashActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/SplashActivity.kt"
             line="12"
             column="7"/>
     </issue>
@@ -348,7 +348,7 @@
         errorLine1="                requestedOrientation = SCREEN_ORIENTATION_PORTRAIT"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="631"
             column="17"/>
     </issue>
@@ -359,7 +359,7 @@
         errorLine1="                when (playbackState) {"
         errorLine2="                ~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="558"
             column="17"/>
     </issue>
@@ -370,7 +370,7 @@
         errorLine1="                when (playbackState) {"
         errorLine2="                ~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="432"
             column="17"/>
     </issue>
@@ -417,7 +417,7 @@
         errorLine1="    val id = getIdentifier(&quot;status_bar_height&quot;, &quot;dimen&quot;, &quot;android&quot;)"
         errorLine2="             ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Resources.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Resources.kt"
             line="17"
             column="14"/>
     </issue>
@@ -428,7 +428,7 @@
         errorLine1="    val id = getIdentifier(&quot;navigation_bar_height&quot;, &quot;dimen&quot;, &quot;android&quot;)"
         errorLine2="             ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/extensions/Resources.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/Resources.kt"
             line="25"
             column="14"/>
     </issue>
@@ -439,7 +439,7 @@
         errorLine1="            val drawable = resources.getDrawable(R.drawable.shortcut_image).mutate()"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="632"
             column="28"/>
     </issue>
@@ -450,7 +450,7 @@
         errorLine1="    private var strokeBackground = context.resources.getDrawable(R.drawable.stroke_background)"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/FiltersAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/FiltersAdapter.kt"
             line="16"
             column="36"/>
     </issue>
@@ -461,7 +461,7 @@
         errorLine1="            val drawable = resources.getDrawable(R.drawable.shortcut_image).mutate()"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="501"
             column="28"/>
     </issue>
@@ -472,7 +472,7 @@
         errorLine1="    private var strokeBackground = context.resources.getDrawable(R.drawable.stroke_background)"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/PortraitPhotosAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/PortraitPhotosAdapter.kt"
             line="22"
             column="36"/>
     </issue>
@@ -483,7 +483,7 @@
         errorLine1="            val drawable = resources.getDrawable(R.drawable.shortcut_image).mutate()"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/ViewPagerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/ViewPagerActivity.kt"
             line="882"
             column="28"/>
     </issue>
@@ -3548,15 +3548,15 @@
 
     <issue
         id="UnsafeIntentLaunch"
-        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossify.gallery.activities.EditActivity. You could either make the component org.fossify.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
+        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossifymigration.baizhu.gallery.activities.EditActivity. You could either make the component org.fossifymigration.baizhu.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
         errorLine1="        setResult(RESULT_OK, intent)"
         errorLine2="                             ~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="948"
             column="30"/>
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="948"
             column="9"
             message="The unsafe intent is launched here."/>
@@ -3564,15 +3564,15 @@
 
     <issue
         id="UnsafeIntentLaunch"
-        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossify.gallery.activities.EditActivity. You could either make the component org.fossify.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
+        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossifymigration.baizhu.gallery.activities.EditActivity. You could either make the component org.fossifymigration.baizhu.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
         errorLine1="                        setResult(RESULT_OK, intent)"
         errorLine2="                                             ~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="986"
             column="46"/>
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="986"
             column="25"
             message="The unsafe intent is launched here."/>
@@ -3580,15 +3580,15 @@
 
     <issue
         id="UnsafeIntentLaunch"
-        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossify.gallery.activities.EditActivity. You could either make the component org.fossify.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
+        message="This intent could be coming from an untrusted source. It is later launched by an unprotected component org.fossifymigration.baizhu.gallery.activities.EditActivity. You could either make the component org.fossifymigration.baizhu.gallery.activities.EditActivity protected; or sanitize this intent using androidx.core.content.IntentSanitizer."
         errorLine1="            setResult(RESULT_OK, intent)"
         errorLine2="                                 ~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="1008"
             column="34"/>
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="1008"
             column="13"
             message="The unsafe intent is launched here."/>
@@ -3600,7 +3600,7 @@
         errorLine1="    override fun onReceive(context: Context, intent: Intent) {"
         errorLine2="                 ~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/receivers/BootCompletedReceiver.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/receivers/BootCompletedReceiver.kt"
             line="11"
             column="18"/>
     </issue>
@@ -3622,7 +3622,7 @@
         errorLine1="            notifyDataSetChanged()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="239"
             column="13"/>
     </issue>
@@ -3633,7 +3633,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="278"
             column="9"/>
     </issue>
@@ -3644,7 +3644,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="289"
             column="9"/>
     </issue>
@@ -3655,7 +3655,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="560"
             column="9"/>
     </issue>
@@ -3666,7 +3666,7 @@
         errorLine1="            notifyDataSetChanged()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="820"
             column="13"/>
     </issue>
@@ -3677,7 +3677,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="827"
             column="9"/>
     </issue>
@@ -3688,7 +3688,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="832"
             column="9"/>
     </issue>
@@ -3699,7 +3699,7 @@
         errorLine1="                    adapter.notifyDataSetChanged()"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/EditActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/EditActivity.kt"
             line="742"
             column="21"/>
     </issue>
@@ -3710,7 +3710,7 @@
         errorLine1="            notifyDataSetChanged()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/FiltersAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/FiltersAdapter.kt"
             line="35"
             column="13"/>
     </issue>
@@ -3721,7 +3721,7 @@
         errorLine1="            notifyDataSetChanged()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="633"
             column="13"/>
     </issue>
@@ -3732,7 +3732,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="640"
             column="9"/>
     </issue>
@@ -3743,7 +3743,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="645"
             column="9"/>
     </issue>
@@ -3754,7 +3754,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="650"
             column="9"/>
     </issue>
@@ -3765,7 +3765,7 @@
         errorLine1="        notifyDataSetChanged()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/MediaAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/MediaAdapter.kt"
             line="655"
             column="9"/>
     </issue>
@@ -3776,7 +3776,7 @@
         errorLine1="            notifyDataSetChanged()"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/PortraitPhotosAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/PortraitPhotosAdapter.kt"
             line="39"
             column="13"/>
     </issue>
@@ -3794,7 +3794,7 @@
         errorLine1="    val context: Context, val mPath: String, val isPickImage: Boolean = false, val isPickVideo: Boolean = false,"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/asynctasks/GetMediaAsynctask.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/asynctasks/GetMediaAsynctask.kt"
             line="16"
             column="5"/>
     </issue>
@@ -3945,7 +3945,7 @@
     <issue
         id="UnusedResources"
         message="The resource `R.string.package_name` appears to be unused"
-        errorLine1="    &lt;string name=&quot;package_name&quot;>org.fossify.gallery&lt;/string>"
+        errorLine1="    &lt;string name=&quot;package_name&quot;>org.fossifymigration.baizhu.gallery&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/donottranslate.xml"
@@ -4541,7 +4541,7 @@
         errorLine1="        set(order) = prefs.edit().putInt(DIRECTORY_SORT_ORDER, order).apply()"
         errorLine2="                     ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="25"
             column="22"/>
     </issue>
@@ -4552,7 +4552,7 @@
         errorLine1="            prefs.edit().putInt(GROUP_FOLDER_PREFIX + path.lowercase(Locale.getDefault()), value).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="31"
             column="13"/>
     </issue>
@@ -4563,7 +4563,7 @@
         errorLine1="        prefs.edit().remove(GROUP_FOLDER_PREFIX + path.lowercase(Locale.getDefault())).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="44"
             column="9"/>
     </issue>
@@ -4574,7 +4574,7 @@
         errorLine1="            prefs.edit().putInt(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()), value).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="53"
             column="13"/>
     </issue>
@@ -4585,7 +4585,7 @@
         errorLine1="        prefs.edit().remove(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault())).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="60"
             column="9"/>
     </issue>
@@ -4596,7 +4596,7 @@
         errorLine1="        set(wasShown) = prefs.edit().putBoolean(HIDE_FOLDER_TOOLTIP_SHOWN, wasShown).apply()"
         errorLine2="                        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="67"
             column="25"/>
     </issue>
@@ -4607,7 +4607,7 @@
         errorLine1="        set(showHiddenFolders) = prefs.edit().putBoolean(SHOW_HIDDEN_MEDIA, showHiddenFolders).apply()"
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="73"
             column="34"/>
     </issue>
@@ -4618,7 +4618,7 @@
         errorLine1="        set(temporarilyShowHidden) = prefs.edit().putBoolean(TEMPORARILY_SHOW_HIDDEN, temporarilyShowHidden).apply()"
         errorLine2="                                     ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="77"
             column="38"/>
     </issue>
@@ -4629,7 +4629,7 @@
         errorLine1="        set(temporarilyShowExcluded) = prefs.edit().putBoolean(TEMPORARILY_SHOW_EXCLUDED, temporarilyShowExcluded).apply()"
         errorLine2="                                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="81"
             column="40"/>
     </issue>
@@ -4640,7 +4640,7 @@
         errorLine1="        set(isThirdPartyIntent) = prefs.edit().putBoolean(IS_THIRD_PARTY_INTENT, isThirdPartyIntent).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="85"
             column="35"/>
     </issue>
@@ -4651,7 +4651,7 @@
         errorLine1="        set(pinnedFolders) = prefs.edit().putStringSet(PINNED_FOLDERS, pinnedFolders).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="89"
             column="30"/>
     </issue>
@@ -4662,7 +4662,7 @@
         errorLine1="        set(showAll) = prefs.edit().putBoolean(SHOW_ALL, showAll).apply()"
         errorLine2="                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="93"
             column="24"/>
     </issue>
@@ -4673,7 +4673,7 @@
         errorLine1="        set(excludedFolders) = prefs.edit().remove(EXCLUDED_FOLDERS).putStringSet(EXCLUDED_FOLDERS, excludedFolders).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="128"
             column="32"/>
     </issue>
@@ -4684,7 +4684,7 @@
         errorLine1="        set(isExcludedPasswordProtectionOn) = prefs.edit().putBoolean(EXCLUDED_PASSWORD_PROTECTION, isExcludedPasswordProtectionOn).apply()"
         errorLine2="                                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="132"
             column="47"/>
     </issue>
@@ -4695,7 +4695,7 @@
         errorLine1="        set(excludedPasswordHash) = prefs.edit().putString(EXCLUDED_PASSWORD_HASH, excludedPasswordHash).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="136"
             column="37"/>
     </issue>
@@ -4706,7 +4706,7 @@
         errorLine1="        set(excludedProtectionType) = prefs.edit().putInt(EXCLUDED_PROTECTION_TYPE, excludedProtectionType).apply()"
         errorLine2="                                      ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="140"
             column="39"/>
     </issue>
@@ -4717,7 +4717,7 @@
         errorLine1="        set(includedFolders) = prefs.edit().remove(INCLUDED_FOLDERS).putStringSet(INCLUDED_FOLDERS, includedFolders).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="162"
             column="32"/>
     </issue>
@@ -4728,7 +4728,7 @@
         errorLine1="        set(autoplayVideos) = prefs.edit().putBoolean(AUTOPLAY_VIDEOS, autoplayVideos).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="166"
             column="31"/>
     </issue>
@@ -4739,7 +4739,7 @@
         errorLine1="        set(animateGifs) = prefs.edit().putBoolean(ANIMATE_GIFS, animateGifs).apply()"
         errorLine2="                           ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="170"
             column="28"/>
     </issue>
@@ -4750,7 +4750,7 @@
         errorLine1="        set(maxBrightness) = prefs.edit().putBoolean(MAX_BRIGHTNESS, maxBrightness).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="174"
             column="30"/>
     </issue>
@@ -4761,7 +4761,7 @@
         errorLine1="        set(ultraHdrRendering) = prefs.edit().putBoolean(ULTRA_HDR_RENDERING, ultraHdrRendering).apply()"
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="178"
             column="34"/>
     </issue>
@@ -4772,7 +4772,7 @@
         errorLine1="        set(playbackSpeed) = prefs.edit().putFloat(PLAYBACK_SPEED, playbackSpeed).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="182"
             column="30"/>
     </issue>
@@ -4783,7 +4783,7 @@
         errorLine1="        set(playbackSpeedProgress) = prefs.edit().putInt(PLAYBACK_SPEED_PROGRESS, playbackSpeedProgress).apply()"
         errorLine2="                                     ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="186"
             column="38"/>
     </issue>
@@ -4794,7 +4794,7 @@
         errorLine1="        set(cropThumbnails) = prefs.edit().putBoolean(CROP_THUMBNAILS, cropThumbnails).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="190"
             column="31"/>
     </issue>
@@ -4805,7 +4805,7 @@
         errorLine1="        set(showThumbnailVideoDuration) = prefs.edit().putBoolean(SHOW_THUMBNAIL_VIDEO_DURATION, showThumbnailVideoDuration).apply()"
         errorLine2="                                          ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="194"
             column="43"/>
     </issue>
@@ -4816,7 +4816,7 @@
         errorLine1="        set(showThumbnailFileTypes) = prefs.edit().putBoolean(SHOW_THUMBNAIL_FILE_TYPES, showThumbnailFileTypes).apply()"
         errorLine2="                                      ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="198"
             column="39"/>
     </issue>
@@ -4827,7 +4827,7 @@
         errorLine1="        set(markFavoriteItems) = prefs.edit().putBoolean(MARK_FAVORITE_ITEMS, markFavoriteItems).apply()"
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="202"
             column="34"/>
     </issue>
@@ -4838,7 +4838,7 @@
         errorLine1="        set(screenRotation) = prefs.edit().putInt(SCREEN_ROTATION, screenRotation).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="206"
             column="31"/>
     </issue>
@@ -4849,7 +4849,7 @@
         errorLine1="        set(fileLoadingPriority) = prefs.edit().putInt(FILE_LOADING_PRIORITY, fileLoadingPriority).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="210"
             column="36"/>
     </issue>
@@ -4860,7 +4860,7 @@
         errorLine1="        set(loop) = prefs.edit().putBoolean(LOOP_VIDEOS, loop).apply()"
         errorLine2="                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="214"
             column="21"/>
     </issue>
@@ -4871,7 +4871,7 @@
         errorLine1="        set(muteVideos) = prefs.edit().putBoolean(MUTE_VIDEOS, muteVideos).apply()"
         errorLine2="                          ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="218"
             column="27"/>
     </issue>
@@ -4882,7 +4882,7 @@
         errorLine1="        set(gestureVideoPlayer) = prefs.edit().putBoolean(GESTURE_VIDEO_PLAYER, gestureVideoPlayer)"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="222"
             column="35"/>
     </issue>
@@ -4893,7 +4893,7 @@
         errorLine1="        set(videoPlayerType) = prefs.edit().putInt(VIDEO_PLAYER_TYPE, videoPlayerType).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="227"
             column="32"/>
     </issue>
@@ -4904,7 +4904,7 @@
         errorLine1="        set(display) = prefs.edit().putBoolean(DISPLAY_FILE_NAMES, display).apply()"
         errorLine2="                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="231"
             column="24"/>
     </issue>
@@ -4915,7 +4915,7 @@
         errorLine1="        set(blackBackground) = prefs.edit().putBoolean(BLACK_BACKGROUND, blackBackground).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="235"
             column="32"/>
     </issue>
@@ -4926,7 +4926,7 @@
         errorLine1="        set(filterMedia) = prefs.edit().putInt(FILTER_MEDIA, filterMedia).apply()"
         errorLine2="                           ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="239"
             column="28"/>
     </issue>
@@ -4937,7 +4937,7 @@
         errorLine1="        set(dirColumnCnt) = prefs.edit().putInt(getDirectoryColumnsField(), dirColumnCnt).apply()"
         errorLine2="                            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="243"
             column="29"/>
     </issue>
@@ -4948,7 +4948,7 @@
         errorLine1="        set(defaultFolder) = prefs.edit().putString(DEFAULT_FOLDER, defaultFolder).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="247"
             column="30"/>
     </issue>
@@ -4959,7 +4959,7 @@
         errorLine1="        set(allowInstantChange) = prefs.edit().putBoolean(ALLOW_INSTANT_CHANGE, allowInstantChange).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="251"
             column="35"/>
     </issue>
@@ -4970,7 +4970,7 @@
         errorLine1="        set(mediaColumnCnt) = prefs.edit().putInt(getMediaColumnsField(), mediaColumnCnt).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="280"
             column="31"/>
     </issue>
@@ -4981,7 +4981,7 @@
         errorLine1="        set(albumCovers) = prefs.edit().putString(ALBUM_COVERS, albumCovers).apply()"
         errorLine2="                           ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="309"
             column="28"/>
     </issue>
@@ -4992,7 +4992,7 @@
         errorLine1="        set(hideSystemUI) = prefs.edit().putBoolean(HIDE_SYSTEM_UI, hideSystemUI).apply()"
         errorLine2="                            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="318"
             column="29"/>
     </issue>
@@ -5003,7 +5003,7 @@
         errorLine1="        set(deleteEmptyFolders) = prefs.edit().putBoolean(DELETE_EMPTY_FOLDERS, deleteEmptyFolders).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="322"
             column="35"/>
     </issue>
@@ -5014,7 +5014,7 @@
         errorLine1="        set(keepScreenOn) = prefs.edit().putBoolean(KEEP_SCREEN_ON, keepScreenOn).apply()"
         errorLine2="                            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="326"
             column="29"/>
     </issue>
@@ -5025,7 +5025,7 @@
         errorLine1="        set(allowPhotoGestures) = prefs.edit().putBoolean(ALLOW_PHOTO_GESTURES, allowPhotoGestures).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="330"
             column="35"/>
     </issue>
@@ -5036,7 +5036,7 @@
         errorLine1="        set(allowVideoGestures) = prefs.edit().putBoolean(ALLOW_VIDEO_GESTURES, allowVideoGestures).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="334"
             column="35"/>
     </issue>
@@ -5047,7 +5047,7 @@
         errorLine1="        set(slideshowInterval) = prefs.edit().putInt(SLIDESHOW_INTERVAL, slideshowInterval).apply()"
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="338"
             column="34"/>
     </issue>
@@ -5058,7 +5058,7 @@
         errorLine1="        set(slideshowIncludeVideos) = prefs.edit().putBoolean(SLIDESHOW_INCLUDE_VIDEOS, slideshowIncludeVideos).apply()"
         errorLine2="                                      ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="342"
             column="39"/>
     </issue>
@@ -5069,7 +5069,7 @@
         errorLine1="        set(slideshowIncludeGIFs) = prefs.edit().putBoolean(SLIDESHOW_INCLUDE_GIFS, slideshowIncludeGIFs).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="346"
             column="37"/>
     </issue>
@@ -5080,7 +5080,7 @@
         errorLine1="        set(slideshowRandomOrder) = prefs.edit().putBoolean(SLIDESHOW_RANDOM_ORDER, slideshowRandomOrder).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="350"
             column="37"/>
     </issue>
@@ -5091,7 +5091,7 @@
         errorLine1="        set(slideshowMoveBackwards) = prefs.edit().putBoolean(SLIDESHOW_MOVE_BACKWARDS, slideshowMoveBackwards).apply()"
         errorLine2="                                      ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="354"
             column="39"/>
     </issue>
@@ -5102,7 +5102,7 @@
         errorLine1="        set(slideshowAnimation) = prefs.edit().putInt(SLIDESHOW_ANIMATION, slideshowAnimation).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="358"
             column="35"/>
     </issue>
@@ -5113,7 +5113,7 @@
         errorLine1="        set(loopSlideshow) = prefs.edit().putBoolean(SLIDESHOW_LOOP, loopSlideshow).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="362"
             column="30"/>
     </issue>
@@ -5124,7 +5124,7 @@
         errorLine1="        set(tempFolderPath) = prefs.edit().putString(TEMP_FOLDER_PATH, tempFolderPath).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="366"
             column="31"/>
     </issue>
@@ -5135,7 +5135,7 @@
         errorLine1="        set(viewTypeFolders) = prefs.edit().putInt(VIEW_TYPE_FOLDERS, viewTypeFolders).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="370"
             column="32"/>
     </issue>
@@ -5146,7 +5146,7 @@
         errorLine1="        set(viewTypeFiles) = prefs.edit().putInt(VIEW_TYPE_FILES, viewTypeFiles).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="374"
             column="30"/>
     </issue>
@@ -5157,7 +5157,7 @@
         errorLine1="        set(showExtendedDetails) = prefs.edit().putBoolean(SHOW_EXTENDED_DETAILS, showExtendedDetails).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="378"
             column="36"/>
     </issue>
@@ -5168,7 +5168,7 @@
         errorLine1="        set(hideExtendedDetails) = prefs.edit().putBoolean(HIDE_EXTENDED_DETAILS, hideExtendedDetails).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="382"
             column="36"/>
     </issue>
@@ -5179,7 +5179,7 @@
         errorLine1="        set(extendedDetails) = prefs.edit().putInt(EXTENDED_DETAILS, extendedDetails).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="386"
             column="32"/>
     </issue>
@@ -5190,7 +5190,7 @@
         errorLine1="        set(wasNewAppShown) = prefs.edit().putBoolean(WAS_NEW_APP_SHOWN, wasNewAppShown).apply()"
         errorLine2="                              ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="390"
             column="31"/>
     </issue>
@@ -5201,7 +5201,7 @@
         errorLine1="        set(lastFilepickerPath) = prefs.edit().putString(LAST_FILEPICKER_PATH, lastFilepickerPath).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="394"
             column="35"/>
     </issue>
@@ -5212,7 +5212,7 @@
         errorLine1="        set(tempSkipDeleteConfirmation) = prefs.edit().putBoolean(TEMP_SKIP_DELETE_CONFIRMATION, tempSkipDeleteConfirmation).apply()"
         errorLine2="                                          ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="398"
             column="43"/>
     </issue>
@@ -5223,7 +5223,7 @@
         errorLine1="        set(tempSkipRecycleBin) = prefs.edit().putBoolean(TEMP_SKIP_RECYCLE_BIN, tempSkipRecycleBin).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="402"
             column="35"/>
     </issue>
@@ -5234,7 +5234,7 @@
         errorLine1="        set(wereFavoritesPinned) = prefs.edit().putBoolean(WERE_FAVORITES_PINNED, wereFavoritesPinned).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="406"
             column="36"/>
     </issue>
@@ -5245,7 +5245,7 @@
         errorLine1="        set(wasRecycleBinPinned) = prefs.edit().putBoolean(WAS_RECYCLE_BIN_PINNED, wasRecycleBinPinned).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="410"
             column="36"/>
     </issue>
@@ -5256,7 +5256,7 @@
         errorLine1="        set(wasSVGShowingHandled) = prefs.edit().putBoolean(WAS_SVG_SHOWING_HANDLED, wasSVGShowingHandled).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="414"
             column="37"/>
     </issue>
@@ -5267,7 +5267,7 @@
         errorLine1="        set(groupBy) = prefs.edit().putInt(GROUP_BY, groupBy).apply()"
         errorLine2="                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="418"
             column="24"/>
     </issue>
@@ -5278,7 +5278,7 @@
         errorLine1="        set(useRecycleBin) = prefs.edit().putBoolean(USE_RECYCLE_BIN, useRecycleBin).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="422"
             column="30"/>
     </issue>
@@ -5289,7 +5289,7 @@
         errorLine1="        set(bottomActions) = prefs.edit().putBoolean(BOTTOM_ACTIONS, bottomActions).apply()"
         errorLine2="                             ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="426"
             column="30"/>
     </issue>
@@ -5300,7 +5300,7 @@
         errorLine1="        prefs.edit().remove(&quot;$LAST_VIDEO_POSITION_PREFIX${path.lowercase(Locale.getDefault())}&quot;).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="429"
             column="9"/>
     </issue>
@@ -5311,7 +5311,7 @@
         errorLine1="            prefs.edit().putInt(&quot;$LAST_VIDEO_POSITION_PREFIX${path.lowercase(Locale.getDefault())}&quot;, value).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="434"
             column="13"/>
     </issue>
@@ -5322,7 +5322,7 @@
         errorLine1="                    prefs.edit().remove(it.key).apply()"
         errorLine2="                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="449"
             column="21"/>
     </issue>
@@ -5333,7 +5333,7 @@
         errorLine1="            prefs.edit().putBoolean(REMEMBER_LAST_VIDEO_POSITION, rememberLastVideoPosition).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="452"
             column="13"/>
     </issue>
@@ -5344,7 +5344,7 @@
         errorLine1="        set(visibleBottomActions) = prefs.edit().putInt(VISIBLE_BOTTOM_ACTIONS, visibleBottomActions).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="457"
             column="37"/>
     </issue>
@@ -5355,7 +5355,7 @@
         errorLine1="        set(everShownFolders) = prefs.edit().putStringSet(EVER_SHOWN_FOLDERS, everShownFolders).apply()"
         errorLine2="                                ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="462"
             column="33"/>
     </issue>
@@ -5366,7 +5366,7 @@
         errorLine1="        set(showRecycleBinAtFolders) = prefs.edit().putBoolean(SHOW_RECYCLE_BIN_AT_FOLDERS, showRecycleBinAtFolders).apply()"
         errorLine2="                                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="482"
             column="40"/>
     </issue>
@@ -5377,7 +5377,7 @@
         errorLine1="        set(allowZoomingImages) = prefs.edit().putBoolean(ALLOW_ZOOMING_IMAGES, allowZoomingImages).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="486"
             column="35"/>
     </issue>
@@ -5388,7 +5388,7 @@
         errorLine1="        set(lastBinCheck) = prefs.edit().putLong(LAST_BIN_CHECK, lastBinCheck).apply()"
         errorLine2="                            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="490"
             column="29"/>
     </issue>
@@ -5399,7 +5399,7 @@
         errorLine1="        set(showHighestQuality) = prefs.edit().putBoolean(SHOW_HIGHEST_QUALITY, showHighestQuality).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="494"
             column="35"/>
     </issue>
@@ -5410,7 +5410,7 @@
         errorLine1="        set(showRecycleBinLast) = prefs.edit().putBoolean(SHOW_RECYCLE_BIN_LAST, showRecycleBinLast).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="498"
             column="35"/>
     </issue>
@@ -5421,7 +5421,7 @@
         errorLine1="        set(allowDownGesture) = prefs.edit().putBoolean(ALLOW_DOWN_GESTURE, allowDownGesture).apply()"
         errorLine2="                                ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="502"
             column="33"/>
     </issue>
@@ -5432,7 +5432,7 @@
         errorLine1="        set(lastEditorCropAspectRatio) = prefs.edit().putInt(LAST_EDITOR_CROP_ASPECT_RATIO, lastEditorCropAspectRatio).apply()"
         errorLine2="                                         ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="506"
             column="42"/>
     </issue>
@@ -5443,7 +5443,7 @@
         errorLine1="        set(lastEditorCropOtherAspectRatioX) = prefs.edit().putFloat(LAST_EDITOR_CROP_OTHER_ASPECT_RATIO_X, lastEditorCropOtherAspectRatioX).apply()"
         errorLine2="                                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="510"
             column="48"/>
     </issue>
@@ -5454,7 +5454,7 @@
         errorLine1="        set(lastEditorCropOtherAspectRatioY) = prefs.edit().putFloat(LAST_EDITOR_CROP_OTHER_ASPECT_RATIO_Y, lastEditorCropOtherAspectRatioY).apply()"
         errorLine2="                                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="514"
             column="48"/>
     </issue>
@@ -5465,7 +5465,7 @@
         errorLine1="        set(groupDirectSubfolders) = prefs.edit().putBoolean(GROUP_DIRECT_SUBFOLDERS, groupDirectSubfolders).apply()"
         errorLine2="                                     ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="518"
             column="38"/>
     </issue>
@@ -5476,7 +5476,7 @@
         errorLine1="        set(showWidgetFolderName) = prefs.edit().putBoolean(SHOW_WIDGET_FOLDER_NAME, showWidgetFolderName).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="522"
             column="37"/>
     </issue>
@@ -5487,7 +5487,7 @@
         errorLine1="        set(allowOneToOneZoom) = prefs.edit().putBoolean(ALLOW_ONE_TO_ONE_ZOOM, allowOneToOneZoom).apply()"
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="526"
             column="34"/>
     </issue>
@@ -5498,7 +5498,7 @@
         errorLine1="        set(allowRotatingWithGestures) = prefs.edit().putBoolean(ALLOW_ROTATING_WITH_GESTURES, allowRotatingWithGestures).apply()"
         errorLine2="                                         ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="530"
             column="42"/>
     </issue>
@@ -5509,7 +5509,7 @@
         errorLine1="        set(lastEditorDrawColor) = prefs.edit().putInt(LAST_EDITOR_DRAW_COLOR, lastEditorDrawColor).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="534"
             column="36"/>
     </issue>
@@ -5520,7 +5520,7 @@
         errorLine1="        set(lastEditorBrushSize) = prefs.edit().putInt(LAST_EDITOR_BRUSH_SIZE, lastEditorBrushSize).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="538"
             column="36"/>
     </issue>
@@ -5531,7 +5531,7 @@
         errorLine1="        set(showNotch) = prefs.edit().putBoolean(SHOW_NOTCH, showNotch).apply()"
         errorLine2="                         ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="542"
             column="26"/>
     </issue>
@@ -5542,7 +5542,7 @@
         errorLine1="        set(spamFoldersChecked) = prefs.edit().putBoolean(SPAM_FOLDERS_CHECKED, spamFoldersChecked).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="548"
             column="35"/>
     </issue>
@@ -5553,7 +5553,7 @@
         errorLine1="        set(editorBrushColor) = prefs.edit().putInt(EDITOR_BRUSH_COLOR, editorBrushColor).apply()"
         errorLine2="                                ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="552"
             column="33"/>
     </issue>
@@ -5564,7 +5564,7 @@
         errorLine1="        set(editorBrushHardness) = prefs.edit().putFloat(EDITOR_BRUSH_HARDNESS, editorBrushHardness).apply()"
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="556"
             column="36"/>
     </issue>
@@ -5575,7 +5575,7 @@
         errorLine1="        set(editorBrushSize) = prefs.edit().putFloat(EDITOR_BRUSH_SIZE, editorBrushSize).apply()"
         errorLine2="                               ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="560"
             column="32"/>
     </issue>
@@ -5586,7 +5586,7 @@
         errorLine1="        set(wereFavoritesMigrated) = prefs.edit().putBoolean(WERE_FAVORITES_MIGRATED, wereFavoritesMigrated).apply()"
         errorLine2="                                     ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="564"
             column="38"/>
     </issue>
@@ -5597,7 +5597,7 @@
         errorLine1="        set(showFolderMediaCount) = prefs.edit().putInt(FOLDER_MEDIA_COUNT, showFolderMediaCount).apply()"
         errorLine2="                                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="568"
             column="37"/>
     </issue>
@@ -5608,7 +5608,7 @@
         errorLine1="        set(folderStyle) = prefs.edit().putInt(FOLDER_THUMBNAIL_STYLE, folderStyle).apply()"
         errorLine2="                           ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="572"
             column="28"/>
     </issue>
@@ -5619,7 +5619,7 @@
         errorLine1="        set(limitFolderTitle) = prefs.edit().putBoolean(LIMIT_FOLDER_TITLE, limitFolderTitle).apply()"
         errorLine2="                                ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="576"
             column="33"/>
     </issue>
@@ -5630,7 +5630,7 @@
         errorLine1="        set(thumbnailSpacing) = prefs.edit().putInt(THUMBNAIL_SPACING, thumbnailSpacing).apply()"
         errorLine2="                                ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="580"
             column="33"/>
     </issue>
@@ -5641,7 +5641,7 @@
         errorLine1="        set(fileRoundedCorners) = prefs.edit().putBoolean(FILE_ROUNDED_CORNERS, fileRoundedCorners).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="584"
             column="35"/>
     </issue>
@@ -5652,7 +5652,7 @@
         errorLine1="        set(customFoldersOrder) = prefs.edit().putString(CUSTOM_FOLDERS_ORDER, customFoldersOrder).apply()"
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="588"
             column="35"/>
     </issue>
@@ -5663,7 +5663,7 @@
         errorLine1="        set(avoidShowingAllFilesPrompt) = prefs.edit().putBoolean(AVOID_SHOWING_ALL_FILES_PROMPT, avoidShowingAllFilesPrompt).apply()"
         errorLine2="                                          ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="592"
             column="43"/>
     </issue>
@@ -5674,7 +5674,7 @@
         errorLine1="        set(searchAllFilesByDefault) = prefs.edit().putBoolean(SEARCH_ALL_FILES_BY_DEFAULT, searchAllFilesByDefault).apply()"
         errorLine2="                                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="596"
             column="40"/>
     </issue>
@@ -5685,7 +5685,7 @@
         errorLine1="        set(lastExportedFavoritesFolder) = prefs.edit().putString(LAST_EXPORTED_FAVORITES_FOLDER, lastExportedFavoritesFolder).apply()"
         errorLine2="                                           ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="600"
             column="44"/>
     </issue>
@@ -5696,7 +5696,7 @@
         errorLine1="        set(showPermissionRationale) = prefs.edit().putBoolean(SHOW_PERMISSION_RATIONALE, showPermissionRationale).apply()"
         errorLine2="                                       ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/Config.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/Config.kt"
             line="604"
             column="40"/>
     </issue>
@@ -5707,7 +5707,7 @@
         errorLine1="                dirLock.background = ColorDrawable(root.context.getProperBackgroundColor())"
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="877"
             column="38"/>
     </issue>
@@ -5718,7 +5718,7 @@
         errorLine1="                dirLock.background = ColorDrawable(root.context.getProperBackgroundColor())"
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="877"
             column="38"/>
     </issue>
@@ -5729,7 +5729,7 @@
         errorLine1="        canvas.save()"
         errorLine2="        ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/EditorDrawCanvas.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/EditorDrawCanvas.kt"
             line="41"
             column="9"/>
     </issue>
@@ -5740,7 +5740,7 @@
         errorLine1="        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/EditorDrawCanvas.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/EditorDrawCanvas.kt"
             line="132"
             column="22"/>
     </issue>
@@ -5751,7 +5751,7 @@
         errorLine1="        private val MEDIA_URI = Uri.parse(&quot;content://${MediaStore.AUTHORITY}/&quot;)"
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/jobs/NewPhotoFetcher.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/jobs/NewPhotoFetcher.kt"
             line="26"
             column="33"/>
     </issue>
@@ -5762,7 +5762,7 @@
         errorLine1="            mMedium.path = requireContext().getRealPathFromURI(Uri.parse(mOriginalPath)) ?: mMedium.path"
         errorLine2="                                                               ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="214"
             column="64"/>
     </issue>
@@ -5773,7 +5773,7 @@
         errorLine1="                    var inputStream = requireContext().contentResolver.openInputStream(Uri.parse(mOriginalPath))"
         errorLine2="                                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="222"
             column="88"/>
     </issue>
@@ -5784,7 +5784,7 @@
         errorLine1="                    inputStream = requireContext().contentResolver.openInputStream(Uri.parse(mOriginalPath))"
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="227"
             column="84"/>
     </issue>
@@ -5795,7 +5795,7 @@
         errorLine1="                    val file = File(requireContext().externalCacheDir, Uri.parse(mOriginalPath).lastPathSegment)"
         errorLine2="                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="233"
             column="72"/>
     </issue>
@@ -5806,7 +5806,7 @@
         errorLine1="                InputSource.UriSource(requireContext().contentResolver, Uri.parse(pathToLoad))"
         errorLine2="                                                                        ~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="442"
             column="73"/>
     </issue>
@@ -5817,7 +5817,7 @@
         errorLine1="            background = ColorDrawable(Color.TRANSPARENT)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="764"
             column="26"/>
     </issue>
@@ -5828,7 +5828,7 @@
         errorLine1="            background = ColorDrawable(Color.TRANSPARENT)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="764"
             column="26"/>
     </issue>
@@ -5839,7 +5839,7 @@
         errorLine1="                    background = ColorDrawable("
         errorLine2="                                 ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="776"
             column="34"/>
     </issue>
@@ -5850,7 +5850,7 @@
         errorLine1="                    background = ColorDrawable("
         errorLine2="                                 ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="776"
             column="34"/>
     </issue>
@@ -5861,7 +5861,7 @@
         errorLine1="                    background = ColorDrawable(Color.TRANSPARENT)"
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="791"
             column="34"/>
     </issue>
@@ -5872,7 +5872,7 @@
         errorLine1="                    background = ColorDrawable(Color.TRANSPARENT)"
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="791"
             column="34"/>
     </issue>
@@ -5883,7 +5883,7 @@
         errorLine1="                requireContext().contentResolver.openInputStream(Uri.parse(mMedium.path))"
         errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="831"
             column="66"/>
     </issue>
@@ -5894,7 +5894,7 @@
         errorLine1="                val inputStream = requireContext().contentResolver.openInputStream(Uri.parse(path))"
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="862"
             column="84"/>
     </issue>
@@ -5905,7 +5905,7 @@
         errorLine1="                val uri = if (path.startsWith(&quot;content:/&quot;)) Uri.parse(path) else Uri.fromFile(File(path))"
         errorLine2="                                                            ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="873"
             column="61"/>
     </issue>
@@ -5916,7 +5916,7 @@
         errorLine1="        val newUri = Uri.parse(uri.toString().replace(&quot;%&quot;, &quot;%25&quot;).replace(&quot;#&quot;, &quot;%23&quot;))"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/helpers/PicassoRegionDecoder.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/PicassoRegionDecoder.kt"
             line="18"
             column="22"/>
     </issue>
@@ -5927,7 +5927,7 @@
         errorLine1="        val uri = if (isContentUri) Uri.parse(mMedium.path) else Uri.fromFile(File(mMedium.path))"
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="480"
             column="37"/>
     </issue>
@@ -5938,7 +5938,7 @@
         errorLine1="            binding.videoPlayerHolder.background = ColorDrawable(Color.BLACK)"
         errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="176"
             column="52"/>
     </issue>
@@ -5949,7 +5949,7 @@
         errorLine1="            binding.videoPlayerHolder.background = ColorDrawable(Color.BLACK)"
         errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="176"
             column="52"/>
     </issue>
@@ -5960,7 +5960,7 @@
         errorLine1="        binding.folderPickerHolder.background = ColorDrawable(getProperBackgroundColor())"
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/WidgetConfigureActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/WidgetConfigureActivity.kt"
             line="58"
             column="49"/>
     </issue>
@@ -5971,7 +5971,7 @@
         errorLine1="        binding.folderPickerHolder.background = ColorDrawable(getProperBackgroundColor())"
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/WidgetConfigureActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/WidgetConfigureActivity.kt"
             line="58"
             column="49"/>
     </issue>
@@ -5982,7 +5982,7 @@
         errorLine1="                dirDragHandle.setOnTouchListener { v, event ->"
         errorLine2="                ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="955"
             column="17"/>
     </issue>
@@ -5993,7 +5993,7 @@
         errorLine1="                dirDragHandle.setOnTouchListener { v, event ->"
         errorLine2="                                                 ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="955"
             column="50"/>
     </issue>
@@ -6004,7 +6004,7 @@
         errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
         errorLine2="                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/EditorDrawCanvas.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/EditorDrawCanvas.kt"
             line="57"
             column="18"/>
     </issue>
@@ -6015,7 +6015,7 @@
         errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
         errorLine2="                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/InstantItemSwitch.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/InstantItemSwitch.kt"
             line="32"
             column="18"/>
     </issue>
@@ -6026,7 +6026,7 @@
         errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
         errorLine2="                 ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/MediaSideScroll.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/MediaSideScroll.kt"
             line="84"
             column="18"/>
     </issue>
@@ -6037,7 +6037,7 @@
         errorLine1="        binding.photoPortraitStripe.setOnTouchListener { v, event ->"
         errorLine2="        ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="705"
             column="9"/>
     </issue>
@@ -6048,7 +6048,7 @@
         errorLine1="        binding.photoPortraitStripe.setOnTouchListener { v, event ->"
         errorLine2="                                                       ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PhotoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PhotoFragment.kt"
             line="705"
             column="56"/>
     </issue>
@@ -6059,7 +6059,7 @@
         errorLine1="            videoPreview.setOnTouchListener { view, event ->"
         errorLine2="            ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="240"
             column="13"/>
     </issue>
@@ -6070,7 +6070,7 @@
         errorLine1="            videoPreview.setOnTouchListener { view, event ->"
         errorLine2="                                            ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="240"
             column="45"/>
     </issue>
@@ -6081,7 +6081,7 @@
         errorLine1="            videoSurfaceFrame.setOnTouchListener { view, event ->"
         errorLine2="            ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="245"
             column="13"/>
     </issue>
@@ -6092,7 +6092,7 @@
         errorLine1="            videoSurfaceFrame.setOnTouchListener { view, event ->"
         errorLine2="                                                 ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="245"
             column="50"/>
     </issue>
@@ -6103,7 +6103,7 @@
         errorLine1="        binding.videoSurfaceFrame.setOnTouchListener { view, event ->"
         errorLine2="        ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="317"
             column="9"/>
     </issue>
@@ -6114,7 +6114,7 @@
         errorLine1="        binding.videoSurfaceFrame.setOnTouchListener { view, event ->"
         errorLine2="                                                     ^">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="317"
             column="54"/>
     </issue>
@@ -6378,7 +6378,7 @@
         errorLine1="        binding.dialogFileStyleSpacing.text = &quot;${thumbnailSpacing}x&quot;"
         errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ChangeFileThumbnailStyleDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ChangeFileThumbnailStyleDialog.kt"
             line="67"
             column="47"/>
     </issue>
@@ -6389,7 +6389,7 @@
         errorLine1="                    sampleBinding.photoCnt.text = photoCount.toString()"
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ChangeFolderThumbnailStyleDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ChangeFolderThumbnailStyleDialog.kt"
             line="88"
             column="51"/>
     </issue>
@@ -6400,7 +6400,7 @@
         errorLine1="                    sampleBinding.dirName.text = &quot;$folderName ($photoCount)&quot;"
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ChangeFolderThumbnailStyleDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ChangeFolderThumbnailStyleDialog.kt"
             line="94"
             column="50"/>
     </issue>
@@ -6411,7 +6411,7 @@
         errorLine1="            dirPath?.text = &quot;${directory.path.substringBeforeLast(&quot;/&quot;)}/&quot;"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="838"
             column="29"/>
     </issue>
@@ -6422,7 +6422,7 @@
         errorLine1="            photoCnt.text = directory.subfoldersMediaCount.toString()"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/adapters/DirectoryAdapter.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/adapters/DirectoryAdapter.kt"
             line="917"
             column="29"/>
     </issue>
@@ -6433,7 +6433,7 @@
         errorLine1="            text = &quot;$mSlideInfoText:\n$percent%&quot;"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/views/MediaSideScroll.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/views/MediaSideScroll.kt"
             line="197"
             column="20"/>
     </issue>
@@ -6444,7 +6444,7 @@
         errorLine1="        speedLabel.text = &quot;${formattedValue}x&quot;"
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PlaybackSpeedFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PlaybackSpeedFragment.kt"
             line="60"
             column="27"/>
     </issue>
@@ -6455,7 +6455,7 @@
         errorLine1="                speedLabel.text = &quot;${formatPlaybackSpeed(playbackSpeed)}x&quot;"
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/PlaybackSpeedFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/PlaybackSpeedFragment.kt"
             line="80"
             column="35"/>
     </issue>
@@ -6466,7 +6466,7 @@
         errorLine1="        widthView.setText(size.x.toString())"
         errorLine2="                          ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="17"
             column="27"/>
     </issue>
@@ -6477,7 +6477,7 @@
         errorLine1="        heightView.setText(size.y.toString())"
         errorLine2="                           ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="18"
             column="28"/>
     </issue>
@@ -6488,7 +6488,7 @@
         errorLine1="                    widthView.setText(size.x.toString())"
         errorLine2="                                      ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="26"
             column="39"/>
     </issue>
@@ -6499,7 +6499,7 @@
         errorLine1="                    heightView.setText((width / ratio).toInt().toString())"
         errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="31"
             column="40"/>
     </issue>
@@ -6510,7 +6510,7 @@
         errorLine1="                    heightView.setText(size.y.toString())"
         errorLine2="                                       ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="40"
             column="40"/>
     </issue>
@@ -6521,7 +6521,7 @@
         errorLine1="                    widthView.setText((height * ratio).toInt().toString())"
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeDialog.kt"
             line="45"
             column="39"/>
     </issue>
@@ -6532,7 +6532,7 @@
         errorLine1="            folder.setText(&quot;${activity.humanizePath(realPath).trimEnd(&apos;/&apos;)}/&quot;)"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="18"
             column="28"/>
     </issue>
@@ -6543,7 +6543,7 @@
         errorLine1="        widthView.setText(size.x.toString())"
         errorLine2="                          ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="42"
             column="27"/>
     </issue>
@@ -6554,7 +6554,7 @@
         errorLine1="        heightView.setText(size.y.toString())"
         errorLine2="                           ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="43"
             column="28"/>
     </issue>
@@ -6565,7 +6565,7 @@
         errorLine1="                    widthView.setText(size.x.toString())"
         errorLine2="                                      ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="51"
             column="39"/>
     </issue>
@@ -6576,7 +6576,7 @@
         errorLine1="                heightView.setText((width / ratio).toInt().toString())"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="55"
             column="36"/>
     </issue>
@@ -6587,7 +6587,7 @@
         errorLine1="                    heightView.setText(size.y.toString())"
         errorLine2="                                       ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="63"
             column="40"/>
     </issue>
@@ -6598,7 +6598,7 @@
         errorLine1="                widthView.setText((height * ratio).toInt().toString())"
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/ResizeWithPathDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/ResizeWithPathDialog.kt"
             line="67"
             column="35"/>
     </issue>
@@ -6609,7 +6609,7 @@
         errorLine1="            folderValue.setText(&quot;${activity.humanizePath(realPath).trimEnd(&apos;/&apos;)}/&quot;)"
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/SaveAsDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/SaveAsDialog.kt"
             line="40"
             column="33"/>
     </issue>
@@ -6620,7 +6620,7 @@
         errorLine1="                &quot;${getString(R.string.manage_included_folders)} (${getString(org.fossify.commons.R.string.no_permission)})&quot;"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/SettingsActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/SettingsActivity.kt"
             line="205"
             column="17"/>
     </issue>
@@ -6631,7 +6631,7 @@
         errorLine1="                &quot;${getString(org.fossify.commons.R.string.show_hidden_items)} (${getString(org.fossify.commons.R.string.no_permission)})&quot;"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/SettingsActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/SettingsActivity.kt"
             line="239"
             column="17"/>
     </issue>
@@ -6642,7 +6642,7 @@
         errorLine1="            intervalValue.setText(config.slideshowInterval.toString())"
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/dialogs/SlideshowDialog.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/dialogs/SlideshowDialog.kt"
             line="92"
             column="35"/>
     </issue>
@@ -6653,7 +6653,7 @@
         errorLine1="                &quot;${DecimalFormat(&quot;#.##&quot;).format(mConfig.playbackSpeed)}x&quot;"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/fragments/VideoFragment.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/fragments/VideoFragment.kt"
             line="829"
             column="17"/>
     </issue>
@@ -6664,7 +6664,7 @@
         errorLine1="                &quot;${DecimalFormat(&quot;#.##&quot;).format(config.playbackSpeed)}x&quot;"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/fossify/gallery/activities/VideoPlayerActivity.kt"
+            file="src/main/kotlin/org/fossifymigration/baizhu/gallery/activities/VideoPlayerActivity.kt"
             line="470"
             column="17"/>
     </issue>

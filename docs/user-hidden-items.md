@@ -1,9 +1,13 @@
 # Hidden by you: default browsing policy
 
-This fork now distinguishes **explicit user intent** from merely being hidden on
+BaizhuGallery distinguishes **explicit user intent** from merely being hidden on
 the filesystem. It does not claim that Android provides a reliable "hidden by the
 system" attribute, or that small images are system images. File size is never used
 as evidence of who hid a file.
+
+For the independent package and cross-app installation boundaries, see
+[independent release](independent-release.md). The new package does not import
+an older app's ownership registry automatically.
 
 ## Default behavior
 
@@ -24,7 +28,7 @@ folders remain separate requirements, not replaced by the intent registry.
 
 Older versions only renamed files or created `.nomedia`; they did not record
 who performed the hiding. Existing media therefore are **not automatically
-adopted**. They are not deleted, unhidden, moved or modified by this upgrade.
+adopted**. They are not deleted, unhidden, moved or modified merely by installing this app.
 
 1. Enable **Other hidden** (Chinese: **包含其它隐藏**) in the overflow menu.
    Read the explanation and complete the existing hidden-item authorization.
@@ -109,7 +113,7 @@ bash tests/hidden-media-filter/run.sh
 ```
 
 No dependency, build configuration, target SDK, Room schema or quality baseline
-change is required. See `docs/user-hidden-validation.md` for fresh results,
-artifact identity, device setup and limitations. The earlier
+change is required. See `docs/user-hidden-validation.md` for historical results,
+artifact identity, device setup and limitations; these are not fresh 1.15.0 tests. The earlier
 `docs/hidden-only-validation.md` describes the previous physical-hidden-only
 policy and is retained as historical evidence, not new-policy verification.

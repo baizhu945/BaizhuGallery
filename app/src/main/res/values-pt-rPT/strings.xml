@@ -102,7 +102,7 @@
     <string name="show_folder_name">Mostrar nome da pasta</string>
     <string name="allow_photo_gestures">Permitir controlo do brilho com gestos verticais</string>
     <string name="toggle_favorite">Alternar favorito</string>
-    <string name="full_storage_permission_required">Fossify Gallery precisa de acessso total para mostrar as fotos e os vídeos. Aceda a Definições &gt; Permissões &gt; Fotos e vídeos &gt; Permitir.</string>
+    <string name="full_storage_permission_required">Gallery precisa de acessso total para mostrar as fotos e os vídeos. Aceda a Definições &gt; Permissões &gt; Fotos e vídeos &gt; Permitir.</string>
     <string name="exclude_folder_parent">Excluir antes a pasta superior?</string>
     <string name="resize_and_save">Redimensionar seleção e guardar</string>
     <string name="slide">Deslizar</string>

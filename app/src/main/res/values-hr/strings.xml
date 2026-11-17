@@ -243,7 +243,7 @@
     <string name="faq_17_text">To je prestalo raditi zbog promjena sustava koje su uvedene s Androidom 11. Aplikacija više ne može pregledavati stvarne mape, oslanja se na takozvani MediaStore za dohvaćanje podataka.</string>
     <string name="faq_18_title">Zašto vidim oglase tijekom reprodukcije videa\?</string>
     <string name="faq_18_text">Naše aplikacije ne sadrže oglase. Ako ih vidiš tijekom reprodukcije videa, vjerojatno koristiš neki drugi video player. Pokušaj pronaći standardni video player u postavkama uređaja, a zatim na njemu izvrši „Očisti standardne postavke“. Sljedeći put kada pozoveš neku namjeru gledanja videa, vidjet ćeš upit za biranje aplikacija u kojem možeš odabrati aplikaciju koju želiš koristiti.</string>
-    <string name="faq_1_title">Kako mogu odrediti Fossify Gallery kao standardnu galeriju uređaja?</string>
+    <string name="faq_1_title">Kako mogu odrediti Gallery kao standardnu galeriju uređaja?</string>
     <string name="wallpaper">Slika pozadine</string>
     <string name="exclude_folder_description">Ovo će isključiti odabir zajedno s njegovim podmapama samo iz Fossify galerije. Isključenim mapama možeš upravljati u postavkama.</string>
     <string name="excluded_activity_placeholder">Isključivanje mapa će ih sakriti zajedno s njihovim podmapama samo u Fossify galeriji, i dalje će biti vidljive u drugim aplikacijama.

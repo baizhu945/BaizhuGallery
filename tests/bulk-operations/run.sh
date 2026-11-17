@@ -14,6 +14,6 @@ trap cleanup EXIT
 mkdir "$work/cases"
 # Compile the real pure production implementation in the same Kotlin module.
 timeout 60s kotlinc \
-    "$repo/app/src/main/kotlin/org/fossify/gallery/extensions/BulkVisibilityFiles.kt" \
+    "$repo/app/src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/BulkVisibilityFiles.kt" \
     "$here/BulkVisibilityFilesTest.kt" -include-runtime -d "$work/tests.jar"
 timeout --kill-after=1s 5s java -jar "$work/tests.jar" "$work/cases"

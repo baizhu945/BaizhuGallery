@@ -1,10 +1,10 @@
-# Hidden-only media browsing (fork)
+# Hidden-only media browsing
 
-Implements [Gallery issue #274](https://github.com/FossifyOrg/Gallery/issues/274)
-against upstream `0359a4598ec35ad7b50683f4365641eb379491bb` (v1.14.2).
-This is a fork-only change: the issue has no `help wanted` label, and no upstream
-pull request is being proposed. The Gallery contribution guide and linked
-Fossify General-Discussion contribution rules apply.
+Independent BaizhuGallery feature, originally developed against Fossify Gallery
+`0359a4598ec35ad7b50683f4365641eb379491bb` (v1.14.2), inspired by
+[upstream issue #274](https://github.com/FossifyOrg/Gallery/issues/274).
+No upstream pull request is proposed. Use [this project's contribution guide](../CONTRIBUTING.md)
+and read [independent identity and installation boundaries](independent-release.md).
 
 ## Current default: hidden by you
 
@@ -103,6 +103,7 @@ matcher with `kotlinc` and needs no additional test dependency. The upstream
 Gradle unit-test task currently has no test sources; a `NO-SOURCE` result is not
 a JUnit pass.
 
-Current policy verification is recorded in `docs/user-hidden-validation.md`.
+Historical policy verification is recorded in `docs/user-hidden-validation.md`;
+it does not certify the independent 1.15.0 artifact.
 `docs/hidden-only-validation.md` preserves the earlier physical-hidden-only
 version's verification, not current origin-policy test results.

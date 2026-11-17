@@ -6,7 +6,8 @@ body:
     attributes:
       value: |
         ## Hi there 👋
-        Thanks for helping us improve Fossify Gallery by reporting a bug!
+        Thanks for helping us improve BaizhuGallery (Gallery), an independent project based on Fossify Gallery, by reporting a bug!
+        Report this project's bugs here, not to the upstream Fossify project.
         Please fill in as much information as possible about your bug to avoid unnecessary and time-consuming back-and-forth communication.
 
   - type: checkboxes
@@ -14,11 +15,11 @@ body:
     attributes:
       label: "Checklist"
       options:
-        - label: "I can reproduce the bug with the latest version given [here](https://github.com/FossifyOrg/Gallery/releases/latest)."
+        - label: "I can reproduce the bug with the latest version given [here](https://github.com/baizhu945/BaizhuGallery/releases/latest)."
           required: true
-        - label: "I made sure that there are **no existing issues** - [open](https://github.com/FossifyOrg/Gallery/issues) or [closed](https://github.com/FossifyOrg/Gallery/issues?q=is%3Aissue+is%3Aclosed) - to which I could contribute my information."
+        - label: "I made sure that there are **no existing issues** - [open](https://github.com/baizhu945/BaizhuGallery/issues) or [closed](https://github.com/baizhu945/BaizhuGallery/issues?q=is%3Aissue+is%3Aclosed) - to which I could contribute my information."
           required: true
-        - label: "I made sure that there are **no existing discussions** - [open](https://github.com/orgs/FossifyOrg/discussions?discussions_q=is:open+label:gallery) or [closed](https://github.com/orgs/FossifyOrg/discussions?discussions_q=is:closed+label:gallery) - to which I could contribute my information."
+        - label: "I checked this project's [discussions](https://github.com/baizhu945/BaizhuGallery/discussions) for existing reports."
           required: true
         - label: "I have read the FAQs inside the app (Menu -> About -> FAQs) and my problem isn't listed."
           required: true
@@ -26,7 +27,7 @@ body:
           required: true
         - label: "This issue contains only one bug."
           required: true
-        - label: "I have read and understood the [contribution guidelines](https://github.com/FossifyOrg/Gallery/blob/master/CONTRIBUTING.md)."
+        - label: "I have read and understood the [contribution guidelines](https://github.com/baizhu945/BaizhuGallery/blob/main/CONTRIBUTING.md)."
           required: true
 
   - type: input

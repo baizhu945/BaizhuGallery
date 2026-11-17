@@ -1,4 +1,4 @@
-package org.fossify.gallery.adapters
+package org.fossifymigration.baizhu.gallery.adapters
 
 fun main() {
     check("Aa".hashCode() == "BB".hashCode())

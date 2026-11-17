@@ -1,15 +1,29 @@
-name: PR
+name: Build and static checks
 
 on:
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-    call-pr-workflow:
-        uses: FossifyOrg/.github/.github/workflows/pr.yml@main
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
         with:
-            test_task: ":app:testFossDebugUnitTest"
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      # The inherited Gradle JUnit task is currently NO-SOURCE; standalone helper
+      # runners are documented separately and are not mislabelled as JUnit coverage.
+      - run: >-
+          ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4096m
+          :app:assembleFossDebug :app:testFossDebugUnitTest detekt lint :app:assembleFossRelease

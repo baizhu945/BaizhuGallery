@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0]
+### Changed
+- Independent BaizhuGallery release in `baizhu945/BaizhuGallery`; launcher name remains Gallery.
+- Default Light_blue icon and brief startup splash use `#0288D1`; configurable alternates (including Green) remain, while Android themed icons follow the system/launcher palette.
+- About source/issues entries target this project; upstream FAQ/license/credit links remain explicitly labeled. See [narrow Commons compatibility adjustment](docs/commons-compatibility.md).
+- Existing lint/detekt baseline entries receive only one-to-one namespace/path substitutions for the identity rename, not new suppressions or relaxed checks.
+- Application ID, namespace and source package root become `org.fossifymigration.baizhu.gallery`, with separate Release signing and no automatic private-data migration. Read [installation warnings](docs/independent-release.md) before uninstalling older apps.
+- Hidden-only browsing defaults to explicitly owned/claimed hidden media, with opt-in Other hidden and independent-child provenance boundaries.
+- Worker-prepared browsing, latest-only search, indexed lookups and thumbnail reuse; historical performance results are mixed, not universal guarantees.
+- Real batch item/byte feedback, conservative conflict/native-denial handling and verified recycle restoration. Historical validation does not certify a new 1.15.0 device matrix.
+
+Earlier entries and links below preserve upstream release history and attribution.
+
 ## [1.14.2] - 2026-11-03
 ### Changed
 - Updated translations
@@ -324,7 +337,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#917]: https://github.com/FossifyOrg/Gallery/issues/917
 [#925]: https://github.com/FossifyOrg/Gallery/issues/925
 
-[Unreleased]: https://github.com/FossifyOrg/Gallery/compare/1.14.2...HEAD
+[Unreleased]: https://github.com/baizhu945/BaizhuGallery/compare/1.15.0...HEAD
+[1.15.0]: https://github.com/baizhu945/BaizhuGallery/releases/tag/1.15.0
 [1.14.2]: https://github.com/FossifyOrg/Gallery/compare/1.14.1...1.14.2
 [1.14.1]: https://github.com/FossifyOrg/Gallery/compare/1.14.0...1.14.1
 [1.14.0]: https://github.com/FossifyOrg/Gallery/compare/1.13.1...1.14.0

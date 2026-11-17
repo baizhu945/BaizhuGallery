@@ -252,7 +252,7 @@
     <string name="wallpaper">Papel de Parede</string>
     <string name="failed_to_load_media">Erro ao carregar os dados.</string>
     <string name="playback_speed">Velocidade de reprodução</string>
-    <string name="full_storage_permission_required">Fossify Gallery precisa de acesso total para mostrar as fotos e os vídeos. Aceda a Definições &gt; Permissões &gt; Fotos e vídeos &gt; Permitir.</string>
+    <string name="full_storage_permission_required">Gallery precisa de acesso total para mostrar as fotos e os vídeos. Aceda a Definições &gt; Permissões &gt; Fotos e vídeos &gt; Permitir.</string>
     <string name="file_is_malformed_or_corrupted">Ficheiro inválido ou danificado.</string>
     <string name="media_exceeds_device_capabilities">O ficheiro excede as capacidades do dispositivo.</string>
     <string name="unsupported_format">Formato não suportado.</string>

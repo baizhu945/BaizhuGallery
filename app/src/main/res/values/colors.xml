@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Independent branding; do not change the shared theme or alternate icon palette. -->
+    <color name="gallery_default_icon_color">#0288D1</color>
+    <color name="default_app_icon_color">@color/gallery_default_icon_color</color>
     <color name="crop_image_view_background">#BB000000</color>
     <color name="circle_black_background">#66000000</color>
 </resources>

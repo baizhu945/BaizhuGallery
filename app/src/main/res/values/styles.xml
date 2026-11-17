@@ -2,6 +2,12 @@
 
     <style name="AppTheme" parent="AppTheme.Base" />
 
+    <!-- Pre-Android 12 starting window and the brief SplashActivity window. -->
+    <style name="SplashTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/gallery_splash_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
     <style name="CustomBottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>
     </style>

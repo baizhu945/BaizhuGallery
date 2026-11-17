@@ -1,5 +1,9 @@
 # Hidden-only filter validation (historical first release)
 
+> Historical evidence: package IDs, hashes, dates and references below identify
+> prior releases, not BaizhuGallery 1.15.0. The independent identity does not
+> recertify this matrix; see [release/migration context](independent-release.md).
+
 This report describes `hidden-only-v1.14.2-1`, before explicit user-intent
 tracking. For the new default source policy, see `user-hidden-items.md` and
 `user-hidden-validation.md`. Historical results below are not reused as proof

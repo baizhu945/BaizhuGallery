@@ -1,0 +1,9 @@
+<resources>
+    <!-- Android 12+ supplies the system splash from the launching activity's icon.
+         Do not force a fixed animated icon: alternate launcher aliases keep theirs.
+         Avoid drawing a second legacy splash behind the system splash. -->
+    <style name="SplashTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

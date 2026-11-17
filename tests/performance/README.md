@@ -1,5 +1,11 @@
 # Isolated production-helper performance checks
 
+> Historical benchmark artifacts, APK hashes and emulator setup below refer to
+> prior releases, not a rerun for independent BaizhuGallery 1.15.0. See
+> [identity/migration context](../../docs/independent-release.md); changing the
+> package does not recertify these measurements. Review old package-specific
+> harness assumptions before attempting a new, separately identified run.
+
 Run `bash tests/performance/run.sh` from any working directory with existing `kotlinc`, Java, Git and Python 3. No Gradle/dependencies/build changes. Do not run compilation while the emulator frame benchmark is active.
 
 Outputs default to `~/.cache/gallery-performance/benchmark/pure/` (`GALLERY_BENCH_OUT` overrides). Baseline helper files are extracted with `git show 79acc:...`; current production helpers are copied without editing app source. The same deterministic 2,000/20,000-image paths and 500/2,000 registered roots run 3 JVM warmups + 5 timed samples. Timings exclude registry/path construction; counters are actual injected probe/originalPath callbacks, not real filesystem IO latency. Median summaries are in JSON, raw samples CSV. Current-only media queries separately exercise `matchesMedia` filename-probe avoidance; compare baseline general queries explicitly, not as identical APIs.

@@ -3,13 +3,32 @@ name: Fastlane metadata validation
 on:
   push:
     branches: [main]
-    paths:
-      - "fastlane/**"
+    paths: ["fastlane/**", ".github/workflows/validate-fastlane-metadata.yml"]
   pull_request:
     branches: [main]
-    paths:
-      - "fastlane/**"
+    paths: ["fastlane/**", ".github/workflows/validate-fastlane-metadata.yml"]
+
+permissions:
+  contents: read
 
 jobs:
   validate:
-    uses: FossifyOrg/.github/.github/workflows/validate-fastlane-metadata.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check current metadata (no store submission)
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('fastlane/metadata/android')
+          for locale in ('en-US', 'zh-CN'):
+              for name, limit in (('title.txt', 30), ('short_description.txt', 80), ('full_description.txt', 4000)):
+                  text = (root / locale / name).read_text().strip()
+                  assert 0 < len(text) <= limit, (locale, name)
+              for code in range(45, 50):
+                  text = (root / locale / 'changelogs' / f'{code}.txt').read_text().strip()
+                  assert 0 < len(text) <= 500, (locale, code)
+          assert 'package_name("org.fossifymigration.baizhu.gallery")' in Path('fastlane/Appfile').read_text()
+          PY

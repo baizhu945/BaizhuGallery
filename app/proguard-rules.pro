@@ -1,4 +1,5 @@
 -keep class org.fossify.** { *; }
+-keep class org.fossifymigration.baizhu.gallery.** { *; }
 -dontwarn android.graphics.Canvas
 -dontwarn org.fossify.**
 -dontwarn org.apache.**

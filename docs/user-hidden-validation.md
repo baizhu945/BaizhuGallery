@@ -1,5 +1,9 @@
 # User-intent hidden policy: validation
 
+> Historical evidence: package IDs, hashes, dates and references below identify
+> prior releases, not BaizhuGallery 1.15.0. The independent identity does not
+> recertify this matrix; see [release/migration context](independent-release.md).
+
 This followup is based on commit `7c1f65cc5849baa8ce8c83cb9e381d12f0965aa2`
 (the first fork release). It changes all hidden-media browsing to an explicit
 user-intent policy. Older physical-hidden-only results are historical, not proof

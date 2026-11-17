@@ -1,6 +1,6 @@
-package org.fossify.gallery.tests
+package org.fossifymigration.baizhu.gallery.tests
 
-import org.fossify.gallery.helpers.HiddenMediaState
+import org.fossifymigration.baizhu.gallery.helpers.HiddenMediaState
 
 fun runHiddenMediaStateTests() {
     var passed = 0

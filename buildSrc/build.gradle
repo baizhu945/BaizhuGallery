@@ -1,0 +1,15 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.register('compatibilitySelfTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.baizhu.gallery.build.ConstantPoolRewriterSelfTest'
+}
+tasks.named('check') { dependsOn compatibilitySelfTest }
