@@ -33,20 +33,17 @@ import org.fossify.commons.extensions.handleDeletePasswordProtection
 import org.fossify.commons.extensions.hasOTGConnected
 import org.fossify.commons.extensions.internalStoragePath
 import org.fossify.commons.extensions.isAStorageRootFolder
-import org.fossify.commons.extensions.isAccessibleWithSAFSdk30
 import org.fossify.commons.extensions.isExternalStorageManager
 import org.fossify.commons.extensions.isImageFast
 import org.fossify.commons.extensions.isPathOnOTG
 import org.fossify.commons.extensions.isRestrictedWithSAFSdk30
 import org.fossify.commons.extensions.needsStupidWritePermissions
 import org.fossify.commons.extensions.recycleBinPath
-import org.fossify.commons.extensions.rescanPaths
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.FAVORITES
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isRPlus
-import org.fossify.commons.helpers.sumByLong
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.gallery.R
@@ -76,11 +73,10 @@ import org.fossify.gallery.extensions.setAs
 import org.fossify.gallery.extensions.shareMediaPaths
 import org.fossify.gallery.extensions.shareMediumPath
 import org.fossify.gallery.extensions.showRestoreConfirmationDialog
-import org.fossify.gallery.extensions.toggleFileVisibility
+import org.fossify.gallery.extensions.runVisibilityBatch
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
 import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
-import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_BIG
@@ -95,7 +91,8 @@ import org.fossify.gallery.interfaces.MediaOperationsListener
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
 import org.fossify.gallery.models.ThumbnailSection
-import java.util.concurrent.atomic.AtomicInteger
+import com.squareup.picasso.Picasso
+import java.util.WeakHashMap
 
 class MediaAdapter(
     activity: BaseSimpleActivity,
@@ -117,7 +114,10 @@ class MediaAdapter(
     private val viewType = config.getFolderViewType(if (config.showAll) SHOW_ALL else path)
     private val isListViewType = viewType == VIEW_TYPE_LIST
     private var rotatedImagePaths = ArrayList<String>()
-    private var currentMediaHash = media.hashCode()
+    private val rowIndex = AdapterRowIndex()
+    private var selectableCount = 0
+    private var renderRows = snapshot(media)
+    private val imageKeys = WeakHashMap<ImageView, List<Any?>>()
     private val hasOTGConnected = activity.hasOTGConnected()
 
     private var scrollHorizontally = config.scrollHorizontally
@@ -132,6 +132,7 @@ class MediaAdapter(
 
     init {
         setupDragListener(true)
+        rebuildIndex()
     }
 
     override fun getActionMenuId() = R.menu.cab_media
@@ -242,13 +243,18 @@ class MediaAdapter(
         }
     }
 
-    override fun getSelectableItemCount() = media.filter { it is Medium }.size
+    override fun getSelectableItemCount() = selectableCount
+
+    private fun rebuildIndex() {
+        rowIndex.rebuild(media.map { (it as? Medium)?.path })
+        selectableCount = media.count { it is Medium }
+    }
 
     override fun getIsItemSelectable(position: Int) = !isASectionTitle(position)
 
-    override fun getItemSelectionKey(position: Int) = (media.getOrNull(position) as? Medium)?.path?.hashCode()
+    override fun getItemSelectionKey(position: Int) = (media.getOrNull(position) as? Medium)?.path?.let(rowIndex::key)
 
-    override fun getItemKeyPosition(key: Int) = media.indexOfFirst { (it as? Medium)?.path?.hashCode() == key }
+    override fun getItemKeyPosition(key: Int) = rowIndex.position(key)
 
     override fun onActionModeCreated() {}
 
@@ -261,6 +267,10 @@ class MediaAdapter(
             val tmb = itemView.allViews.firstOrNull { it.id == R.id.medium_thumbnail }
             if (tmb != null) {
                 Glide.with(activity).clear(tmb)
+                if (tmb is ImageView) {
+                    Picasso.get().cancelRequest(tmb)
+                    imageKeys.remove(tmb)
+                }
             }
         }
     }
@@ -394,19 +404,9 @@ class MediaAdapter(
     }
 
     private fun toggleFileVisibility(hide: Boolean) {
-        val selected = getSelectedItems()
-        val remaining = AtomicInteger(selected.size)
-        ensureBackgroundThread {
-            selected.forEach {
-                activity.toggleFileVisibility(it.path, hide) {
-                    if (remaining.decrementAndGet() == 0) {
-                        activity.runOnUiThread {
-                            finishActMode()
-                            listener?.refreshItems()
-                        }
-                    }
-                }
-            }
+        activity.runVisibilityBatch(getSelectedPaths(), hide) {
+            finishActMode()
+            listener?.refreshItems()
         }
     }
 
@@ -517,14 +517,8 @@ class MediaAdapter(
             activity.applicationContext.rescanFolderMedia(destinationPath)
             activity.applicationContext.rescanFolderMedia(fileDirItems.first().getParentPath())
 
-            val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
-            activity.rescanPaths(newPaths) {
-                activity.fixDateTaken(newPaths, false)
-            }
-
             if (!isCopyOperation) {
                 listener?.refreshItems()
-                activity.updateFavoritePaths(fileDirItems, destinationPath)
             }
         }
     }
@@ -565,16 +559,19 @@ class MediaAdapter(
     }
 
     private fun checkDeleteConfirmation() {
-        activity.handleMediaManagementPrompt {
-            if (config.isDeletePasswordProtectionOn) {
-                activity.handleDeletePasswordProtection {
-                    deleteFiles(config.tempSkipRecycleBin)
-                }
-            } else if (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) {
+        if (isRPlus()) confirmDeleteAction()
+        else activity.handleMediaManagementPrompt { confirmDeleteAction() }
+    }
+
+    private fun confirmDeleteAction() {
+        if (config.isDeletePasswordProtectionOn) {
+            activity.handleDeletePasswordProtection {
                 deleteFiles(config.tempSkipRecycleBin)
-            } else {
-                askConfirmDelete()
             }
+        } else if (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) {
+            deleteFiles(config.tempSkipRecycleBin)
+        } else {
+            askConfirmDelete()
         }
     }
 
@@ -582,20 +579,15 @@ class MediaAdapter(
         val itemsCnt = selectedKeys.size
         val selectedMedia = getSelectedItems()
         val firstPath = selectedMedia.first().path
-        val fileDirItem = selectedMedia.first().toFileDirItem()
-        val size = fileDirItem.getProperSize(activity, countHidden = true).formatSize()
-        val itemsAndSize = if (itemsCnt == 1) {
-            fileDirItem.mediaStoreId = selectedMedia.first().mediaStoreId
-            "\"${firstPath.getFilenameFromPath()}\" ($size)"
+        val description = if (itemsCnt == 1) {
+            "\"${firstPath.getFilenameFromPath()}\""
         } else {
-            val fileDirItems = ArrayList<FileDirItem>(selectedMedia.size)
-            selectedMedia.forEach { medium ->
-                val curFileDirItem = medium.toFileDirItem()
-                fileDirItems.add(curFileDirItem)
-            }
-            val fileSize = fileDirItems.sumByLong { it.getProperSize(activity, countHidden = true) }.formatSize()
-            val deleteItemsString = resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
-            "$deleteItemsString ($fileSize)"
+            resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
+        }
+        val itemsAndSize = if (selectedMedia.all { it.size > 0L }) {
+            "$description (${selectedMedia.sumOf { it.size }.formatSize()})"
+        } else {
+            description
         }
 
         val isRecycleBin = firstPath.startsWith(activity.recycleBinPath)
@@ -616,39 +608,20 @@ class MediaAdapter(
     }
 
     private fun deleteFiles(skipRecycleBin: Boolean) {
-        if (selectedKeys.isEmpty()) {
-            return
+        val selected = getSelectedItems()
+        if (selected.isEmpty()) return
+        val submit = {
+            listener?.tryDeleteFiles(ArrayList(selected.map { it.toFileDirItem() }), skipRecycleBin)
+            finishActMode()
         }
-
-        val selectedItems = getSelectedItems()
-        val selectedPaths = selectedItems.map { it.path } as ArrayList<String>
-        val SAFPath = selectedPaths.firstOrNull { activity.needsStupidWritePermissions(it) } ?: getFirstSelectedItemPath() ?: return
-        activity.handleSAFDialog(SAFPath) {
-            if (!it) {
-                return@handleSAFDialog
-            }
-
-            val sdk30SAFPath = selectedPaths.firstOrNull { activity.isAccessibleWithSAFSdk30(it) } ?: getFirstSelectedItemPath() ?: return@handleSAFDialog
-            activity.checkManageMediaOrHandleSAFDialogSdk30(sdk30SAFPath) {
-                if (!it) {
-                    return@checkManageMediaOrHandleSAFDialogSdk30
-                }
-
-                val fileDirItems = ArrayList<FileDirItem>(selectedKeys.size)
-                val removeMedia = ArrayList<Medium>(selectedKeys.size)
-                val positions = getSelectedItemPositions()
-
-                selectedItems.forEach { medium ->
-                    fileDirItems.add(medium.toFileDirItem())
-                    removeMedia.add(medium)
-                }
-
-                media.removeAll(removeMedia)
-                listener?.tryDeleteFiles(fileDirItems, skipRecycleBin)
-                listener?.updateMediaGridDecoration(media)
-                removeSelectedItems(positions)
-                currentMediaHash = media.hashCode()
-            }
+        // The owned R+ engine requests ONE native batch for protected MediaStore sources.
+        // Do not require all-files/write access before the user can reach that system request.
+        if (isRPlus()) {
+            submit()
+        } else {
+            val path = selected.firstOrNull { activity.needsStupidWritePermissions(it.path) }?.path
+                ?: selected.first().path
+            activity.handleSAFDialog(path) { granted -> if (granted) submit() }
         }
     }
 
@@ -658,40 +631,66 @@ class MediaAdapter(
 
     private fun getFirstSelectedItemPath() = getItemWithKey(selectedKeys.first())?.path
 
-    private fun getItemWithKey(key: Int): Medium? = media.firstOrNull { (it as? Medium)?.path?.hashCode() == key } as? Medium
+    private fun getItemWithKey(key: Int): Medium? = media.getOrNull(rowIndex.position(key)) as? Medium
+
+    private fun snapshot(items: List<ThumbnailItem>) = items.map {
+        if (it is Medium) {
+            AdapterRow("media:${it.path}", listOf(
+                it.name, it.path, it.parentPath, it.modified, it.taken, it.size, it.type,
+                it.videoDuration, it.isFavorite, it.deletedTS, it.mediaStoreId,
+                it.gridPosition, it.thumbnailModified
+            ))
+        } else {
+            AdapterRow("section:${(it as ThumbnailSection).title}", listOf(it.title))
+        }
+    }
 
     fun updateMedia(newMedia: ArrayList<ThumbnailItem>) {
-        val thumbnailItems = newMedia.clone() as ArrayList<ThumbnailItem>
-        if (thumbnailItems.hashCode() != currentMediaHash) {
-            currentMediaHash = thumbnailItems.hashCode()
-            media = thumbnailItems
-            notifyDataSetChanged()
+        val thumbnailItems = ArrayList(newMedia)
+        val oldRows = renderRows
+        val previous = media.filterIsInstance<Medium>().associateBy { it.path }
+        val oldByIdentity = oldRows.associateBy { it.identity }
+        // Replace even equal models: click/selection operations must use the current objects.
+        media = thumbnailItems
+        rebuildIndex()
+        listener?.updateMediaGridDecoration(media)
+        renderRows = snapshot(media)
+        if (oldRows != renderRows) {
             finishActMode()
+            dispatchRowChanges(this, oldRows, renderRows)
+        }
+        // Commons click listeners capture their bound model, even when rendered values are equal.
+        media.forEachIndexed { index, item ->
+            if (item is Medium && previous[item.path] !== item &&
+                oldByIdentity[renderRows[index].identity] == renderRows[index]
+            ) {
+                notifyItemChanged(index, true)
+            }
         }
     }
 
     fun updateDisplayFilenames(displayFilenames: Boolean) {
         this.displayFilenames = displayFilenames
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     fun updateAnimateGifs(animateGifs: Boolean) {
         this.animateGifs = animateGifs
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     fun updateCropThumbnails(cropThumbnails: Boolean) {
         this.cropThumbnails = cropThumbnails
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     fun updateShowFileTypes(showFileTypes: Boolean) {
         this.showFileTypes = showFileTypes
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     private fun setupThumbnail(view: View, medium: Medium) {
-        val isSelected = selectedKeys.contains(medium.path.hashCode())
+        val isSelected = selectedKeys.contains(rowIndex.key(medium.path))
         bindItem(view, medium).apply {
             val padding = if (config.thumbnailSpacing <= 1) {
                 config.thumbnailSpacing
@@ -773,21 +772,34 @@ class MediaAdapter(
                 }
             )
 
-            activity.loadImage(
-                type = medium.type,
-                path = path,
-                target = mediumThumbnail,
-                horizontalScroll = scrollHorizontally,
-                animateGifs = animateGifs,
-                cropThumbnails = cropThumbnails,
-                roundCorners = roundedCorners,
-                signature = medium.getKey(),
-                skipMemoryCacheAtPaths = rotatedImagePaths,
-                onError = {
-                    mediumThumbnail.scaleType = ImageView.ScaleType.CENTER
-                    mediumThumbnail.setImageDrawable(AppCompatResources.getDrawable(activity, R.drawable.ic_vector_warning_colored))
-                }
+            val imageKey = listOf(
+                path, medium.type, medium.getKey(), scrollHorizontally, animateGifs,
+                cropThumbnails, roundedCorners, medium.path in rotatedImagePaths
             )
+            if (imageKeys[mediumThumbnail] != imageKey) {
+                imageKeys[mediumThumbnail] = imageKey
+                Glide.with(activity).clear(mediumThumbnail)
+                Picasso.get().cancelRequest(mediumThumbnail)
+                activity.loadImage(
+                    type = medium.type,
+                    path = path,
+                    target = mediumThumbnail,
+                    horizontalScroll = scrollHorizontally,
+                    animateGifs = animateGifs,
+                    cropThumbnails = cropThumbnails,
+                    roundCorners = roundedCorners,
+                    signature = medium.getKey(),
+                    skipMemoryCacheAtPaths = rotatedImagePaths,
+                    onError = {
+                        if (imageKeys[mediumThumbnail] == imageKey) {
+                            mediumThumbnail.scaleType = ImageView.ScaleType.CENTER
+                            mediumThumbnail.setImageDrawable(
+                                AppCompatResources.getDrawable(activity, R.drawable.ic_vector_warning_colored)
+                            )
+                        }
+                    }
+                )
+            }
 
             if (isListViewType) {
                 mediumName.setTextColor(textColor)
@@ -809,7 +821,7 @@ class MediaAdapter(
             realIndex++
         }
 
-        return (media[realIndex] as? Medium)?.getBubbleText(sorting, activity, dateFormat, timeFormat) ?: ""
+        return (media.getOrNull(realIndex) as? Medium)?.getBubbleText(sorting, activity, dateFormat, timeFormat) ?: ""
     }
 
     private fun bindItem(view: View, medium: Medium): MediaItemBinding {

@@ -345,34 +345,27 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
     }
 }
 
-fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, isCopyOperation: Boolean, callback: (destinationPath: String) -> Unit) {
-    if (fileDirItems.isEmpty()) {
-        toast(org.fossify.commons.R.string.unknown_error_occurred)
-        return
-    }
-
-    val source = fileDirItems[0].getParentPath()
-    PickDirectoryDialog(this, source, true, false, true, false) {
-        val destination = it
-        handleSAFDialog(source) {
-            if (it) {
-                val registry = config.userHiddenPaths
-                val trackedSource = fileDirItems.any { item ->
-                    registry.matches(item.path) { directory ->
-                        getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath)
-                    } || (item.isDirectory && (registry.files + registry.folders).any { claimed ->
-                        claimed.startsWith("${item.path.trimEnd('/')}/")
-                    })
-                }
-                copyMoveFilesTo(
-                    fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden
-                ) { actualDestination ->
-                    // Commons exposes no verified per-file mappings, including conflict renames.
-                    // Keep source intent; transferred hidden files may need a manual claim.
-                    if (trackedSource) runOnUiThread {
-                        toast(R.string.hidden_transfer_reclaim_notice, Toast.LENGTH_LONG)
+fun BaseSimpleActivity.tryCopyMoveFilesTo(
+    fileDirItems: ArrayList<FileDirItem>,
+    isCopyOperation: Boolean,
+    callback: (destinationPath: String) -> Unit
+) {
+    val selected = fileDirItems.toList()
+    runOnUiThread {
+        if (isDestroyed || isFinishing) return@runOnUiThread
+        if (selected.isEmpty()) {
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            return@runOnUiThread
+        }
+        val source = selected[0].getParentPath()
+        PickDirectoryDialog(this, source, true, false, true, false) { destination ->
+            handleSAFDialog(source) { sourceGranted ->
+                if (sourceGranted) {
+                    handleSAFDialog(destination) { destinationGranted ->
+                        if (destinationGranted && !isDestroyed) {
+                            transferMediaWithProgress(selected, destination, isCopyOperation, callback)
+                        }
                     }
-                    callback(actualDestination)
                 }
             }
         }
@@ -475,94 +468,7 @@ fun BaseSimpleActivity.restoreRecycleBinPath(path: String, callback: () -> Unit)
 }
 
 fun BaseSimpleActivity.restoreRecycleBinPaths(paths: ArrayList<String>, callback: () -> Unit) {
-    ensureBackgroundThread {
-        val newPaths = ArrayList<String>()
-        var shownRestoringToPictures = false
-        for (source in paths) {
-            val original = source.removePrefix(recycleBinPath)
-            val sourceWasUserHidden = config.userHiddenPaths.matches(original) { directory ->
-                getDoesFilePathExist("${directory.trimEnd('/')}/$NOMEDIA", config.OTGPath)
-            }
-            var destination = original
-
-            val destinationParent = destination.getParentPath()
-            if (isRestrictedWithSAFSdk30(destinationParent) && !isInDownloadDir(destinationParent)) {
-                // if the file is not writeable on SDK30+, change it to Pictures
-                val picturesDirectory = getPicturesDirectoryPath(destination)
-                destination = File(picturesDirectory, destination.getFilenameFromPath()).path
-                if (!shownRestoringToPictures) {
-                    toast(getString(R.string.restore_to_path, humanizePath(picturesDirectory)))
-                    shownRestoringToPictures = true
-                }
-            }
-
-            val lastModified = File(source).lastModified()
-
-            val isShowingSAF = handleSAFDialog(destination) {}
-            if (isShowingSAF) {
-                return@ensureBackgroundThread
-            }
-
-            val isShowingSAFSdk30 = handleSAFDialogSdk30(destination) {}
-            if (isShowingSAFSdk30) {
-                return@ensureBackgroundThread
-            }
-
-            if (getDoesFilePathExist(destination)) {
-                val newFile = getAlternativeFile(File(destination))
-                destination = newFile.path
-            }
-
-            var inputStream: InputStream? = null
-            var out: OutputStream? = null
-            try {
-                out = getFileOutputStreamSync(destination, source.getMimeType())
-                inputStream = getFileInputStreamSync(source)
-
-                var copiedSize = 0L
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                var bytes = inputStream!!.read(buffer)
-                while (bytes >= 0) {
-                    out!!.write(buffer, 0, bytes)
-                    copiedSize += bytes
-                    bytes = inputStream.read(buffer)
-                }
-
-                out?.flush()
-
-                if (File(source).length() == copiedSize && getDoesFilePathExist(destination)) {
-                    // Restore copies bytes; neither a live original nor the bin copy was deleted.
-                    // Preserve their intent and propagate only this verified file's effective claim.
-                    recordRestoredUserHiddenClaim(sourceWasUserHidden, destination)
-                    mediaDB.updateDeleted(destination.removePrefix(recycleBinPath), 0, "$RECYCLE_BIN$original")
-                    newPaths.add(destination)
-                }
-
-                if (config.keepLastModified && lastModified != 0L) {
-                    File(destination).setLastModified(lastModified)
-                }
-            } catch (e: Exception) {
-                showErrorToast(e)
-            } finally {
-                inputStream?.close()
-                out?.close()
-            }
-        }
-
-        runOnUiThread {
-            callback()
-        }
-
-        rescanPaths(newPaths) {
-            fixDateTaken(newPaths, false)
-        }
-    }
-}
-
-private fun Context.recordRestoredUserHiddenClaim(wasUserHidden: Boolean, destination: String) {
-    if (wasUserHidden) {
-        config.addUserHiddenFiles(listOf(destination))
-    }
+    restoreMediaWithProgress(paths.toList(), callback)
 }
 
 fun BaseSimpleActivity.emptyTheRecycleBin(callback: (() -> Unit)? = null) {

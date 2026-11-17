@@ -1,11 +1,11 @@
 package org.fossify.gallery.activities
 
-import android.database.ContentObserver
-import android.net.Uri
 import android.provider.MediaStore.Images
 import android.provider.MediaStore.Video
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
@@ -13,26 +13,25 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isPiePlus
 import org.fossify.gallery.R
 import org.fossify.gallery.dialogs.StoragePermissionRequiredDialog
-import org.fossify.gallery.extensions.addPathToDB
 import org.fossify.gallery.extensions.config
-import org.fossify.gallery.extensions.updateDirectoryPath
+import org.fossify.gallery.helpers.BulkDeleteRequests
+import org.fossify.gallery.helpers.MediaChangeObserver
 import org.fossify.gallery.helpers.getPermissionsToRequest
 
 open class SimpleActivity : BaseSimpleActivity() {
 
     private var dialog: AlertDialog? = null
 
-    private val observer = object : ContentObserver(null) {
-        override fun onChange(selfChange: Boolean, uri: Uri?) {
-            super.onChange(selfChange, uri)
-            if (uri != null) {
-                val path = getRealPathFromURI(uri)
-                if (path != null) {
-                    updateDirectoryPath(path.getParentPath())
-                    addPathToDB(path)
-                }
-            }
-        }
+    internal val bulkDeleteRequests by lazy { BulkDeleteRequests(this) }
+    private val mediaChanges by lazy { MediaChangeObserver(this) }
+    private val observer get() = mediaChanges.observer
+
+    init {
+        // Activity fields are constructed before attachBaseContext. Register while CREATED,
+        // not before attachment or lazily after STARTED when launchers can no longer register.
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_CREATE) bulkDeleteRequests
+        })
     }
 
     override fun getAppIconIDs() = arrayListOf(

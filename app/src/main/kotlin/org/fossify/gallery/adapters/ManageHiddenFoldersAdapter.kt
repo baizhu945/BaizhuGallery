@@ -10,13 +10,13 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.extensions.getPopupMenuTheme
 import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.isPathOnSD
 import org.fossify.commons.extensions.setupViewBackground
 import org.fossify.commons.interfaces.RefreshRecyclerViewListener
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.ItemManageFolderBinding
-import org.fossify.gallery.extensions.removeNoMedia
+import org.fossify.gallery.extensions.getNoMediaFolders
+import org.fossify.gallery.extensions.runFolderVisibilityBatch
 
 class ManageHiddenFoldersAdapter(
     activity: BaseSimpleActivity, var folders: ArrayList<String>, val listener: RefreshRecyclerViewListener?,
@@ -114,37 +114,25 @@ class ManageHiddenFoldersAdapter(
     }
 
     private fun tryUnhideFolders() {
-        val removeFolders = ArrayList<String>(selectedKeys.size)
-
-        val sdCardPaths = ArrayList<String>()
-        getSelectedItems().forEach {
-            if (activity.isPathOnSD(it)) {
-                sdCardPaths.add(it)
-            }
-        }
-
-        if (sdCardPaths.isNotEmpty()) {
-            activity.handleSAFDialog(sdCardPaths.first()) {
-                if (it) {
-                    unhideFolders(removeFolders)
-                }
-            }
-        } else {
-            unhideFolders(removeFolders)
-        }
+        unhideFolders(ArrayList(getSelectedItems()))
     }
 
-    private fun unhideFolders(removeFolders: ArrayList<String>) {
-        val position = getSelectedItemPositions()
-        getSelectedItems().forEach {
-            removeFolders.add(it)
-            activity.removeNoMedia(it)
-        }
-
-        folders.removeAll(removeFolders)
-        removeSelectedItems(position)
-        if (folders.isEmpty()) {
-            listener?.refreshItems()
+    private fun unhideFolders(paths: ArrayList<String>) {
+        if (paths.isEmpty()) return
+        activity.runFolderVisibilityBatch(paths, false) {
+            finishActMode()
+            if (listener != null) {
+                listener.refreshItems()
+            } else {
+                activity.getNoMediaFolders { actualFolders ->
+                    activity.runOnUiThread {
+                        if (!activity.isDestroyed) {
+                            folders = actualFolders
+                            notifyDataSetChanged()
+                        }
+                    }
+                }
+            }
         }
     }
 }

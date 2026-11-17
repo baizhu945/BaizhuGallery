@@ -7,7 +7,6 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FileDirItem
 import org.fossify.gallery.helpers.*
-import java.io.File
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Locale
@@ -35,6 +34,10 @@ data class Medium(
     companion object {
         private const val serialVersionUID = -6553149366975655L
     }
+
+    // Worker-populated signature metadata; deliberately excluded from Room and data-class identity.
+    // Kotlin copy() does not copy body properties; callers must transfer it explicitly if needed.
+    @Ignore var thumbnailModified: Long? = null
 
     fun isWebP() = name.isWebP()
 
@@ -99,11 +102,7 @@ data class Medium(
     }
 
     fun getSignature(): String {
-        val lastModified = if (modified > 1) {
-            modified
-        } else {
-            File(path).lastModified()
-        }
+        val lastModified = thumbnailModified ?: modified
 
         return "$path-$lastModified-$size"
     }

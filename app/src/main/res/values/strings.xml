@@ -40,6 +40,30 @@
     </plurals>
     <string name="full_storage_permission_required">Fossify Gallery needs full access to display all your photos and videos. Go to Settings > Permissions > Photos and videos > Allow all.</string>
 
+    <!-- Bulk operations -->
+    <string name="bulk_preparing">Preparing…</string>
+    <string name="bulk_hiding">Hiding items</string>
+    <string name="bulk_unhiding">Unhiding items</string>
+    <string name="bulk_deleting">Deleting items</string>
+    <string name="bulk_moving">Moving items</string>
+    <string name="bulk_copying">Copying items</string>
+    <string name="bulk_recycling">Backing up to recycle bin…</string>
+    <string name="bulk_refreshing">Updating library…</string>
+    <string name="bulk_waiting_permission">Waiting for system confirmation…</string>
+    <string name="bulk_items_processed">Processed %1$d/%2$d · Failed: %3$d</string>
+    <string name="bulk_current_file_bytes">Current file: %1$s / %2$s written</string>
+    <string name="bulk_hide_progress">Hide progress</string>
+    <string name="bulk_progress_note">Hiding this dialog does not cancel the operation.</string>
+    <string name="bulk_already_running">An operation is still running. Do not repeat it.</string>
+    <string name="bulk_operation_partial">Some items were not processed. The library has been refreshed.</string>
+    <string name="bulk_operation_failed">Operation could not be completed. Check storage access and try again.</string>
+    <string name="bulk_conflict_title">Destination already exists</string>
+    <string name="bulk_conflict_description">Keep both files, skip this item, or stop processing the remaining items?</string>
+    <string name="bulk_keep_both">Keep both</string>
+    <string name="bulk_skip">Skip</string>
+    <string name="bulk_cancel_remaining">Stop remaining</string>
+    <string name="bulk_recycle_collision">A recycle-bin backup already exists. Both files were kept.</string>
+
     <!-- Filter -->
     <string name="filter_media">Filter media</string>
     <string name="show_only_hidden_items">Hidden only</string>

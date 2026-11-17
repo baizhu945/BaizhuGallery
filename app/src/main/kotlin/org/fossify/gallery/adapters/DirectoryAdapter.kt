@@ -31,7 +31,6 @@ import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.containsNoMedia
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.doesThisOrParentHaveNoMedia
 import org.fossify.commons.extensions.getContrastColor
@@ -49,7 +48,6 @@ import org.fossify.commons.extensions.isRawFast
 import org.fossify.commons.extensions.isSvg
 import org.fossify.commons.extensions.isVideoFast
 import org.fossify.commons.extensions.isVisible
-import org.fossify.commons.extensions.rescanPaths
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.FAVORITES
@@ -71,24 +69,24 @@ import org.fossify.gallery.databinding.DirectoryItemListBinding
 import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
-import org.fossify.gallery.extensions.addNoMedia
-import org.fossify.gallery.extensions.checkAppendingHidden
 import org.fossify.gallery.extensions.claimHiddenPaths
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
-import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.forgetHiddenPaths
 import org.fossify.gallery.extensions.getHiddenMediaFilter
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.isThisOrParentFolderHidden
 import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.mediaDB
-import org.fossify.gallery.extensions.removeNoMedia
+import org.fossify.gallery.extensions.runFolderVisibilityBatch
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.helpers.GalleryExecutors
+import com.squareup.picasso.Picasso
+import java.util.WeakHashMap
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_BRACKETS
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_LINE
@@ -131,8 +129,11 @@ class DirectoryAdapter(
     private var animateGifs = config.animateGifs
     private var cropThumbnails = config.cropThumbnails
     private var groupDirectSubfolders = config.groupDirectSubfolders
-    private var currentDirectoriesHash = dirs.hashCode()
-    private var lockedFolderPaths = ArrayList<String>()
+    private val rowIndex = AdapterRowIndex()
+    private var renderRows = snapshot(dirs)
+    private val imageKeys = WeakHashMap<ImageView, List<Any?>>()
+    private var pendingDirs: ArrayList<Directory>? = null
+    private val lockedFolderPaths = HashSet<String>()
     private var isDragAndDropping = false
     private var startReorderDragListener: StartReorderDragListener? = null
 
@@ -145,6 +146,7 @@ class DirectoryAdapter(
 
     init {
         setupDragListener(true)
+        rebuildIndex()
         fillLockedFolders()
     }
 
@@ -238,9 +240,9 @@ class DirectoryAdapter(
 
     override fun getIsItemSelectable(position: Int) = true
 
-    override fun getItemSelectionKey(position: Int) = dirs.getOrNull(position)?.path?.hashCode()
+    override fun getItemSelectionKey(position: Int) = dirs.getOrNull(position)?.path?.let(rowIndex::key)
 
-    override fun getItemKeyPosition(key: Int) = dirs.indexOfFirst { it.path.hashCode() == key }
+    override fun getItemKeyPosition(key: Int) = rowIndex.position(key)
 
     override fun onActionModeCreated() {}
 
@@ -254,12 +256,25 @@ class DirectoryAdapter(
         }
 
         isDragAndDropping = false
+        renderRows = snapshot(dirs)
+        rebuildIndex()
+        pendingDirs?.let { pending ->
+            pendingDirs = null
+            val byPath = pending.associateBy { it.path }
+            val ordered = dirs.mapNotNull { byPath[it.path] }.toCollection(ArrayList())
+            val existing = dirs.mapTo(HashSet()) { it.path }
+            ordered.addAll(pending.filter { it.path !in existing })
+            updateDirs(ordered)
+        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         if (!activity.isDestroyed) {
-            Glide.with(activity).clear(bindItem(holder.itemView).dirThumbnail)
+            val thumbnail = bindItem(holder.itemView).dirThumbnail
+            imageKeys.remove(thumbnail)
+            Glide.with(activity).clear(thumbnail)
+            Picasso.get().cancelRequest(thumbnail)
         }
     }
 
@@ -304,10 +319,11 @@ class DirectoryAdapter(
 
     private fun moveSelectedItemsToTop() {
         selectedKeys.toMutableList().reversed().forEach { key ->
-            val position = dirs.indexOfFirst { it.path.hashCode() == key }
+            val position = rowIndex.position(key)
             val tempItem = dirs[position]
             dirs.removeAt(position)
             dirs.add(0, tempItem)
+            rebuildIndex()
         }
 
         notifyDataSetChanged()
@@ -315,10 +331,11 @@ class DirectoryAdapter(
 
     private fun moveSelectedItemsToBottom() {
         selectedKeys.forEach { key ->
-            val position = dirs.indexOfFirst { it.path.hashCode() == key }
+            val position = rowIndex.position(key)
             val tempItem = dirs[position]
             dirs.removeAt(position)
             dirs.add(dirs.size, tempItem)
+            rebuildIndex()
         }
 
         notifyDataSetChanged()
@@ -407,35 +424,33 @@ class DirectoryAdapter(
                 return
             }
 
-            selectedPaths.filter { it != FAVORITES && it != RECYCLE_BIN && (selectedPaths.size == 1 || !config.isFolderProtected(it)) }.forEach {
-                val path = it
-                activity.handleLockedFolderOpening(path) { success ->
-                    if (success) {
-                        if (path.containsNoMedia()) {
-                            activity.removeNoMedia(path) {
-                                if (config.shouldShowHidden) {
-                                    updateFolderNames()
-                                } else {
-                                    activity.runOnUiThread {
-                                        listener?.refreshItems()
-                                        finishActMode()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            runFolderVisibility(selectedPaths, false)
         }
     }
 
-    private fun hideFolders(paths: ArrayList<String>) {
-        for (path in paths) {
-            activity.handleLockedFolderOpening(path) { success ->
-                if (success) {
-                    hideFolder(path)
+    private fun hideFolders(paths: ArrayList<String>) = runFolderVisibility(paths, true)
+
+    private fun runFolderVisibility(paths: Collection<String>, hide: Boolean) {
+        val realPaths = paths.filter { it != FAVORITES && it != RECYCLE_BIN }
+        if (realPaths.isEmpty()) return
+        val runBatch: (Collection<String>) -> Unit = { unlocked ->
+            activity.runFolderVisibilityBatch(unlocked.toList(), hide) {
+                finishActMode()
+                listener?.refreshItems()
+            }
+        }
+        if (hide) {
+            var remaining = realPaths.size
+            val unlocked = ArrayList<String>()
+            realPaths.forEach { path ->
+                activity.handleLockedFolderOpening(path) { success ->
+                    if (success) unlocked.add(path)
+                    remaining--
+                    if (remaining == 0) runBatch(unlocked)
                 }
             }
+        } else {
+            handleLockedFolderOpeningForFolders(realPaths, runBatch)
         }
     }
 
@@ -466,52 +481,6 @@ class DirectoryAdapter(
                     activity.emptyAndDisableTheRecycleBin {
                         listener?.refreshItems()
                     }
-                }
-            }
-        }
-    }
-
-    private fun updateFolderNames() {
-        if (config.isHiddenMediaFilteringActive) {
-            listener?.refreshItems()
-            return
-        }
-        val includedFolders = config.includedFolders
-        val hidden = activity.getString(R.string.hidden)
-        dirs.forEach {
-            it.name = activity.checkAppendingHidden(it.path, hidden, includedFolders, ArrayList())
-        }
-        listener?.updateDirectories(dirs.toMutableList() as ArrayList)
-        activity.runOnUiThread {
-            updateDirs(dirs)
-        }
-    }
-
-    private fun hideFolder(path: String) {
-        activity.addNoMedia(path) {
-            if (config.shouldShowHidden) {
-                updateFolderNames()
-            } else {
-                val affectedPositions = ArrayList<Int>()
-                val includedFolders = config.includedFolders
-                val newDirs = dirs.filterIndexed { index, directory ->
-                    val removeDir = directory.path.doesThisOrParentHaveNoMedia(HashMap(), null) && !includedFolders.contains(directory.path)
-                    if (removeDir) {
-                        affectedPositions.add(index)
-                    }
-                    !removeDir
-                } as ArrayList<Directory>
-
-                activity.runOnUiThread {
-                    affectedPositions.sortedDescending().forEach {
-                        notifyItemRemoved(it)
-                    }
-
-                    currentDirectoriesHash = newDirs.hashCode()
-                    dirs = newDirs
-
-                    finishActMode()
-                    listener?.updateDirectories(newDirs)
                 }
             }
         }
@@ -590,7 +559,6 @@ class DirectoryAdapter(
             config.removePinnedFolders(getSelectedPaths().toHashSet())
         }
 
-        currentDirectoriesHash = 0
         pinnedFolders = config.pinnedFolders
         listener?.recheckPinnedFolders()
     }
@@ -627,34 +595,43 @@ class DirectoryAdapter(
     }
 
     private fun copyMoveTo(selectedPaths: Collection<String>, isCopyOperation: Boolean) {
-        val paths = ArrayList<String>()
+        val folders = selectedPaths.toList()
         val showHidden = config.shouldShowHidden
         val hiddenFilter = activity.getHiddenMediaFilter()
-        selectedPaths.forEach {
-            val filter = config.filterMedia
-            File(it).listFiles()?.filter {
-                !File(it.absolutePath).isDirectory &&
-                    it.absolutePath.isMediaFile() && hiddenFilter.matches(it.absolutePath) &&
-                    (showHidden || !it.name.startsWith('.')) &&
-                    ((it.isImageFast() && filter and TYPE_IMAGES != 0) ||
-                        (it.isVideoFast() && filter and TYPE_VIDEOS != 0) ||
-                        (it.isGif() && filter and TYPE_GIFS != 0) ||
-                        (it.isRawFast() && filter and TYPE_RAWS != 0) ||
-                        (it.isSvg() && filter and TYPE_SVGS != 0))
-            }?.mapTo(paths) { it.absolutePath }
-        }
-
-        val fileDirItems = paths.map { FileDirItem(it, it.getFilenameFromPath()) } as ArrayList<FileDirItem>
-        activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation) {
-            val destinationPath = it
-            val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
-            activity.rescanPaths(newPaths) {
-                activity.fixDateTaken(newPaths, false)
+        val filter = config.filterMedia
+        GalleryExecutors.media.execute {
+            val result = runCatching {
+                val items = ArrayList<FileDirItem>()
+                folders.forEach { folder ->
+                    File(folder).listFiles()?.forEach { file ->
+                        val path = file.absolutePath
+                        val allowedType = (file.isImageFast() && filter and TYPE_IMAGES != 0) ||
+                            (file.isVideoFast() && filter and TYPE_VIDEOS != 0) ||
+                            (file.isGif() && filter and TYPE_GIFS != 0) ||
+                            (file.isRawFast() && filter and TYPE_RAWS != 0) ||
+                            (file.isSvg() && filter and TYPE_SVGS != 0)
+                        val visible = showHidden || !file.name.startsWith('.')
+                        val eligible = !file.isDirectory && path.isMediaFile() && allowedType
+                        if (eligible && visible && hiddenFilter.matches(path)) {
+                            items.add(FileDirItem(path, file.name))
+                        }
+                    }
+                }
+                items
             }
-
-            config.tempFolderPath = ""
-            listener?.refreshItems()
-            finishActMode()
+            activity.runOnUiThread {
+                if (!activity.isDestroyed && !activity.isFinishing) {
+                    result.fold(onSuccess = { items ->
+                        if (items.isNotEmpty()) {
+                            activity.tryCopyMoveFilesTo(items, isCopyOperation) {
+                                config.tempFolderPath = ""
+                                listener?.refreshItems()
+                                finishActMode()
+                            }
+                        }
+                    }, onFailure = { activity.showErrorToast(it as? Exception ?: Exception(it)) })
+                }
+            }
         }
     }
 
@@ -854,7 +831,20 @@ class DirectoryAdapter(
 
     private fun getFirstSelectedItemPath() = getFirstSelectedItem()?.path
 
-    private fun getItemWithKey(key: Int): Directory? = dirs.firstOrNull { it.path.hashCode() == key }
+    private fun getItemWithKey(key: Int): Directory? = dirs.getOrNull(rowIndex.position(key))
+
+    private fun rebuildIndex() = rowIndex.rebuild(dirs.map { it.path })
+
+    private fun snapshot(items: List<Directory>): List<AdapterRow> {
+        val pinned = config.pinnedFolders
+        return items.map {
+            AdapterRow(it.path, listOf(
+                it.path, it.tmb, it.name, it.mediaCnt, it.modified, it.taken, it.size,
+                it.location, it.types, it.sortValue, it.subfoldersCount, it.subfoldersMediaCount,
+                it.containsMediaFilesDirectly, config.isFolderProtected(it.path), pinned.contains(it.path)
+            ))
+        }
+    }
 
     private fun fillLockedFolders() {
         lockedFolderPaths.clear()
@@ -864,38 +854,47 @@ class DirectoryAdapter(
     }
 
     fun updateDirs(newDirs: ArrayList<Directory>) {
-        val directories = newDirs.clone() as ArrayList<Directory>
-        if (directories.hashCode() != currentDirectoriesHash) {
-            currentDirectoriesHash = directories.hashCode()
-            dirs = directories
-            fillLockedFolders()
-            notifyDataSetChanged()
+        val directories = ArrayList(newDirs)
+        if (isDragAndDropping) {
+            pendingDirs = ArrayList(directories.map { it.copy() })
+            return
+        }
+        val oldRows = renderRows
+        val newRows = snapshot(directories)
+        val previous = dirs.associateBy { it.path }
+        val oldByIdentity = oldRows.associateBy { it.identity }
+        dirs = directories
+        rebuildIndex()
+        fillLockedFolders()
+        pinnedFolders = config.pinnedFolders
+        renderRows = newRows
+        if (oldRows != newRows) {
             finishActMode()
+            dispatchRowChanges(this, oldRows, newRows)
+        }
+        dirs.forEachIndexed { index, directory ->
+            if (previous[directory.path] !== directory &&
+                oldByIdentity[newRows[index].identity] == newRows[index]
+            ) {
+                notifyItemChanged(index, true)
+            }
         }
     }
 
     fun updateAnimateGifs(animateGifs: Boolean) {
         this.animateGifs = animateGifs
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     fun updateCropThumbnails(cropThumbnails: Boolean) {
         this.cropThumbnails = cropThumbnails
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount, true)
     }
 
     private fun setupView(view: View, directory: Directory, holder: ViewHolder) {
-        val isSelected = selectedKeys.contains(directory.path.hashCode())
+        val isSelected = selectedKeys.contains(rowIndex.key(directory.path))
         bindItem(view).apply {
             dirPath?.text = "${directory.path.substringBeforeLast("/")}/"
-            val thumbnailType = when {
-                directory.tmb.isVideoFast() -> TYPE_VIDEOS
-                directory.tmb.isGif() -> TYPE_GIFS
-                directory.tmb.isRawFast() -> TYPE_RAWS
-                directory.tmb.isSvg() -> TYPE_SVGS
-                else -> TYPE_IMAGES
-            }
-
             dirCheck.beVisibleIf(isSelected)
             if (isSelected) {
                 dirCheck.background?.applyColorFilter(properPrimaryColor)
@@ -924,41 +923,7 @@ class DirectoryAdapter(
                 }
             }
 
-            if (lockedFolderPaths.contains(directory.path)) {
-                dirLock.beVisible()
-                dirLock.background = ColorDrawable(root.context.getProperBackgroundColor())
-                dirLock.applyColorFilter(root.context.getProperBackgroundColor().getContrastColor())
-            } else {
-                dirLock.beGone()
-                val roundedCorners = when {
-                    isListViewType -> ROUNDED_CORNERS_SMALL
-                    folderStyle == FOLDER_STYLE_SQUARE -> ROUNDED_CORNERS_NONE
-                    else -> ROUNDED_CORNERS_BIG
-                }
-
-                dirThumbnail.setBackgroundResource(
-                    when (roundedCorners) {
-                        ROUNDED_CORNERS_SMALL -> R.drawable.placeholder_rounded_small
-                        ROUNDED_CORNERS_BIG -> R.drawable.placeholder_rounded_big
-                        else -> R.drawable.placeholder_square
-                    }
-                )
-
-                activity.loadImage(
-                    type = thumbnailType,
-                    path = directory.tmb,
-                    target = dirThumbnail,
-                    horizontalScroll = scrollHorizontally,
-                    animateGifs = animateGifs,
-                    cropThumbnails = cropThumbnails,
-                    roundCorners = roundedCorners,
-                    signature = directory.getKey(),
-                    onError = {
-                        dirThumbnail.scaleType = ImageView.ScaleType.CENTER
-                        dirThumbnail.setImageDrawable(AppCompatResources.getDrawable(activity, R.drawable.ic_vector_warning_colored))
-                    }
-                )
-            }
+            setupThumbnail(this, directory)
 
             dirPin.beVisibleIf(pinnedFolders.contains(directory.path))
             dirLocation.beVisibleIf(directory.location != LOCATION_INTERNAL)
@@ -1014,6 +979,71 @@ class DirectoryAdapter(
         }
     }
 
+    private fun setupThumbnail(binding: DirectoryItemBinding, directory: Directory) = binding.apply {
+        if (lockedFolderPaths.contains(directory.path)) {
+            imageKeys.remove(dirThumbnail)
+            Glide.with(activity).clear(dirThumbnail)
+            Picasso.get().cancelRequest(dirThumbnail)
+            dirThumbnail.setImageDrawable(null)
+            dirLock.beVisible()
+            dirLock.background = ColorDrawable(root.context.getProperBackgroundColor())
+            dirLock.applyColorFilter(root.context.getProperBackgroundColor().getContrastColor())
+        } else {
+            dirLock.beGone()
+            val thumbnailType = thumbnailType(directory.tmb)
+            val roundedCorners = when {
+                isListViewType -> ROUNDED_CORNERS_SMALL
+                folderStyle == FOLDER_STYLE_SQUARE -> ROUNDED_CORNERS_NONE
+                else -> ROUNDED_CORNERS_BIG
+            }
+            dirThumbnail.setBackgroundResource(
+                when (roundedCorners) {
+                    ROUNDED_CORNERS_SMALL -> R.drawable.placeholder_rounded_small
+                    ROUNDED_CORNERS_BIG -> R.drawable.placeholder_rounded_big
+                    else -> R.drawable.placeholder_square
+                }
+            )
+
+            // Use the same content signature for request reuse and Glide invalidation.
+            val signature = directory.getKey()
+            val imageKey = listOf(
+                directory.tmb, thumbnailType, signature, scrollHorizontally,
+                animateGifs, cropThumbnails, roundedCorners
+            )
+            if (imageKeys[dirThumbnail] != imageKey) {
+                imageKeys[dirThumbnail] = imageKey
+                Glide.with(activity).clear(dirThumbnail)
+                Picasso.get().cancelRequest(dirThumbnail)
+                activity.loadImage(
+                    type = thumbnailType,
+                    path = directory.tmb,
+                    target = dirThumbnail,
+                    horizontalScroll = scrollHorizontally,
+                    animateGifs = animateGifs,
+                    cropThumbnails = cropThumbnails,
+                    roundCorners = roundedCorners,
+                    signature = signature,
+                    onError = {
+                        if (imageKeys[dirThumbnail] == imageKey) {
+                            dirThumbnail.scaleType = ImageView.ScaleType.CENTER
+                            dirThumbnail.setImageDrawable(
+                                AppCompatResources.getDrawable(activity, R.drawable.ic_vector_warning_colored)
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun thumbnailType(path: String) = when {
+        path.isVideoFast() -> TYPE_VIDEOS
+        path.isGif() -> TYPE_GIFS
+        path.isRawFast() -> TYPE_RAWS
+        path.isSvg() -> TYPE_SVGS
+        else -> TYPE_IMAGES
+    }
+
     override fun onRowMoved(fromPosition: Int, toPosition: Int) {
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
@@ -1025,6 +1055,7 @@ class DirectoryAdapter(
             }
         }
 
+        rebuildIndex()
         notifyItemMoved(fromPosition, toPosition)
     }
 

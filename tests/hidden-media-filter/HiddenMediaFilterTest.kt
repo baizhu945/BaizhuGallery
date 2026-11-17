@@ -38,6 +38,22 @@ fun main() {
     }
 
     try {
+        test("matches maps original path exactly once and public classifier still maps") {
+            var mappings = 0
+            val trusted = mutableListOf<String>()
+            val classifier = HiddenMediaFilter(
+                onlyHidden = true,
+                hiddenAccessAllowed = true,
+                hasNoMedia = { false },
+                originalPath = { mappings++; "/.private/$it" },
+                isUserHidden = { trusted.add(it); true }
+            )
+            check(classifier.matches("a.jpg"))
+            check(mappings == 1)
+            check(trusted == listOf("/.private/a.jpg"))
+            check(classifier.isHidden("b.jpg"))
+            check(mappings == 2)
+        }
         test("ordinary mode allows visible files with or without authorization") {
             val path = file("photos/a.jpg").path
             check(filter(onlyHidden = false).matches(path))

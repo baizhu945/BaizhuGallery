@@ -45,6 +45,7 @@ import org.fossify.commons.extensions.getMimeTypeFromUri
 import org.fossify.commons.extensions.getOTGPublicPath
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getStringValue
+import org.fossify.commons.extensions.hasOTGConnected
 import org.fossify.commons.extensions.humanizePath
 import org.fossify.commons.extensions.internalStoragePath
 import org.fossify.commons.extensions.isExternalStorageManager
@@ -93,6 +94,8 @@ import org.fossify.gallery.helpers.IsoTypeReader
 import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.LOCATION_OTG
 import org.fossify.gallery.helpers.LOCATION_SD
+import org.fossify.gallery.helpers.GalleryExecutors
+import org.fossify.gallery.helpers.GalleryPresentationChangeWatch
 import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.MyWidgetProvider
 import org.fossify.gallery.helpers.PicassoRoundedCornersTransformation
@@ -236,6 +239,8 @@ fun Context.getSortedDirectories(source: ArrayList<Directory>): ArrayList<Direct
         return newDirsOrdered
     }
 
+    val locale = Locale.getDefault()
+    val comparator = AlphanumericComparator()
     dirs.sortWith { o1, o2 ->
         o1 as Directory
         o2 as Directory
@@ -243,41 +248,41 @@ fun Context.getSortedDirectories(source: ArrayList<Directory>): ArrayList<Direct
         var result = when {
             sorting and SORT_BY_NAME != 0 -> {
                 if (o1.sortValue.isEmpty()) {
-                    o1.sortValue = o1.name.lowercase(Locale.getDefault())
+                    o1.sortValue = o1.name.lowercase(locale)
                 }
 
                 if (o2.sortValue.isEmpty()) {
-                    o2.sortValue = o2.name.lowercase(Locale.getDefault())
+                    o2.sortValue = o2.name.lowercase(locale)
                 }
 
                 if (sorting and SORT_USE_NUMERIC_VALUE != 0) {
-                    AlphanumericComparator().compare(
-                        string1 = o1.sortValue.normalizeString().lowercase(Locale.getDefault()),
-                        string2 = o2.sortValue.normalizeString().lowercase(Locale.getDefault())
+                    comparator.compare(
+                        string1 = o1.sortValue.normalizeString().lowercase(locale),
+                        string2 = o2.sortValue.normalizeString().lowercase(locale)
                     )
                 } else {
-                    o1.sortValue.normalizeString().lowercase(Locale.getDefault())
-                        .compareTo(o2.sortValue.normalizeString().lowercase(Locale.getDefault()))
+                    o1.sortValue.normalizeString().lowercase(locale)
+                        .compareTo(o2.sortValue.normalizeString().lowercase(locale))
                 }
             }
 
             sorting and SORT_BY_PATH != 0 -> {
                 if (o1.sortValue.isEmpty()) {
-                    o1.sortValue = o1.path.lowercase(Locale.getDefault())
+                    o1.sortValue = o1.path.lowercase(locale)
                 }
 
                 if (o2.sortValue.isEmpty()) {
-                    o2.sortValue = o2.path.lowercase(Locale.getDefault())
+                    o2.sortValue = o2.path.lowercase(locale)
                 }
 
                 if (sorting and SORT_USE_NUMERIC_VALUE != 0) {
-                    AlphanumericComparator().compare(
-                        string1 = o1.sortValue.lowercase(Locale.getDefault()),
-                        string2 = o2.sortValue.lowercase(Locale.getDefault())
+                    comparator.compare(
+                        string1 = o1.sortValue.lowercase(locale),
+                        string2 = o2.sortValue.lowercase(locale)
                     )
                 } else {
-                    o1.sortValue.lowercase(Locale.getDefault())
-                        .compareTo(o2.sortValue.lowercase(Locale.getDefault()))
+                    o1.sortValue.lowercase(locale)
+                        .compareTo(o2.sortValue.lowercase(locale))
                 }
             }
 
@@ -600,9 +605,30 @@ fun Context.rescanFolderMediaSync(path: String) {
 }
 
 fun Context.storeDirectoryItems(items: ArrayList<Directory>) {
-    ensureBackgroundThread {
+    GalleryExecutors.database.execute {
         directoryDB.insertAll(items)
     }
+}
+
+/** Populate on a worker before publishing media; thumbnail binding must never stat files. */
+fun Context.prepareMediaSignatures(media: List<Medium>) {
+    media.forEach { medium ->
+        if (medium.modified > 1L) {
+            medium.thumbnailModified = medium.modified
+        } else if (medium.thumbnailModified == null) {
+            medium.thumbnailModified = getMediaSignatureModified(medium.path)
+        }
+    }
+}
+
+private fun Context.getMediaSignatureModified(path: String): Long = try {
+    if (isPathOnOTG(path)) {
+        getDocumentFile(path)?.lastModified() ?: 0L
+    } else {
+        File(path).lastModified()
+    }
+} catch (ignored: Exception) {
+    0L
 }
 
 fun Context.checkAppendingHidden(
@@ -973,8 +999,18 @@ fun Context.getCachedMediaDirectories(
         val includedFolders = config.includedFolders
         val noMediaFolders = getNoMediaFoldersSync()
         val filterMedia = config.filterMedia
+        val locale = Locale.getDefault()
+        val cachedMedia = try { mediaDB.getAllNonDeleted() } catch (ignored: Exception) { emptyList() }
+        val mediaByParent = cachedMedia.groupBy { it.parentPath.lowercase(locale) }
+        val favorites by lazy { cachedMedia.filter { it.isFavorite } }
         val matchingDirectories = directories.mapNotNull { directory ->
-            val matchingMedia = getCachedDirectoryMedia(directory).filterTo(ArrayList()) {
+            val directoryMedia = when {
+                directory.areFavorites() -> favorites
+                directory.isRecycleBin() -> getUpdatedDeletedMedia()
+                else -> mediaByParent[directory.path.lowercase(locale)].orEmpty()
+            }
+            prepareMediaSignatures(directoryMedia)
+            val matchingMedia = directoryMedia.filterTo(ArrayList()) {
                 val matchesType = it.matchesMediaTypeFilter(getVideosOnly, getImagesOnly, filterMedia)
                 hiddenMediaFilter.matches(it.path) && matchesType
             }
@@ -997,18 +1033,6 @@ fun Context.getCachedMediaDirectories(
     }
 }
 
-private fun Context.getCachedDirectoryMedia(directory: Directory): List<Medium> {
-    return try {
-        when {
-            directory.areFavorites() -> mediaDB.getFavorites()
-            directory.isRecycleBin() -> getUpdatedDeletedMedia()
-            else -> mediaDB.getMediaFromPath(directory.path)
-        }
-    } catch (ignored: Exception) {
-        emptyList()
-    }
-}
-
 private fun Medium.matchesMediaTypeFilter(getVideosOnly: Boolean, getImagesOnly: Boolean, filterMedia: Int): Boolean {
     return when {
         getVideosOnly -> type == TYPE_VIDEOS
@@ -1026,8 +1050,31 @@ fun Context.getCachedMedia(
     ensureBackgroundThread {
         val filterState = getHiddenMediaState()
         val mediaFetcher = MediaFetcher(this)
+        val cachedMedia = if (path.isEmpty()) {
+            try { mediaDB.getAllNonDeleted() } catch (ignored: Exception) { emptyList() }
+        } else emptyList()
+        val cachedByParent = cachedMedia.groupBy { it.parentPath }
         val foldersToScan = if (path.isEmpty()) {
-            mediaFetcher.getFoldersToScan()
+            val cfg = config
+            val excluded = if (cfg.temporarilyShowExcluded) HashSet() else cfg.excludedFolders
+            val included = cfg.includedFolders
+            val noMediaStatuses = HashMap<String, Boolean>()
+            getNoMediaFoldersSync().forEach { noMediaStatuses["$it/$NOMEDIA"] = true }
+            val portraits = cfg.filterMedia and TYPE_PORTRAITS != 0
+            val portraitParents = if (portraits) cachedByParent.keys.filter {
+                it.getFilenameFromPath().startsWith("img_", true)
+            }.toHashSet() else emptySet()
+            val candidates = (cachedByParent.keys + portraitParents.map { it.getParentPath() }).distinct()
+            val visible = candidates.filterTo(HashSet()) { folder ->
+                (!isPathOnOTG(folder) || hasOTGConnected()) &&
+                    folder.shouldFolderBeVisible(
+                        excluded, included, cfg.shouldShowHidden, noMediaStatuses
+                    ) { checkedPath, hidden -> noMediaStatuses[checkedPath] = hidden }
+            }
+            // Portrait/burst children are included through their visible album, as in the fresh scan.
+            cachedByParent.keys.filterTo(ArrayList()) {
+                it in visible || (it in portraitParents && it.getParentPath() in visible)
+            }
         } else {
             arrayListOf(path)
         }
@@ -1041,7 +1088,7 @@ fun Context.getCachedMedia(
             media.addAll(getUpdatedDeletedMedia())
         }
 
-        if (config.filterMedia and TYPE_PORTRAITS != 0) {
+        if (path.isNotEmpty() && config.filterMedia and TYPE_PORTRAITS != 0) {
             val foldersToAdd = ArrayList<String>()
             for (folder in foldersToScan) {
                 val allFiles = File(folder).listFiles() ?: continue
@@ -1055,7 +1102,7 @@ fun Context.getCachedMedia(
         val shouldShowHidden = config.shouldShowHidden
         foldersToScan.filter { path.isNotEmpty() || !config.isFolderProtected(it) }.forEach {
             try {
-                val currMedia = mediaDB.getMediaFromPath(it)
+                val currMedia = if (path.isEmpty()) cachedByParent[it].orEmpty() else mediaDB.getMediaFromPath(it)
                 media.addAll(currMedia)
             } catch (ignored: Exception) {
             }
@@ -1082,6 +1129,7 @@ fun Context.getCachedMedia(
         val hiddenMediaFilter = getHiddenMediaFilter()
         media = media.filterTo(ArrayList()) { hiddenMediaFilter.matches(it.path) }
 
+        prepareMediaSignatures(media)
         val pathToUse = path.ifEmpty { SHOW_ALL }
         mediaFetcher.sortMedia(media, config.getFolderSorting(pathToUse))
         val grouped = mediaFetcher.groupMedia(media, pathToUse)
@@ -1094,10 +1142,9 @@ fun Context.getCachedMedia(
 
         try {
             val mediaToDelete = ArrayList<Medium>()
-            // creating a new thread intentionally, do not reuse the common background thread
-            Thread {
+            GalleryExecutors.database.execute {
                 if (filterState != getHiddenMediaState() || config.isHiddenMediaFilteringActive) {
-                    return@Thread
+                    return@execute
                 }
                 media.filter { !getDoesFilePathExist(it.path, OTGPath) }.forEach {
                     if (it.path.startsWith(recycleBinPath)) {
@@ -1117,7 +1164,7 @@ fun Context.getCachedMedia(
                     } catch (ignored: Exception) {
                     }
                 }
-            }.start()
+            }
         } catch (ignored: Exception) {
         }
     }
@@ -1191,6 +1238,7 @@ fun Context.updateFavorite(path: String, isFavorite: Boolean) {
         } else {
             favoritesDB.deleteFavoritePath(path)
         }
+        GalleryPresentationChangeWatch.markChanged()
     } catch (e: Exception) {
         toast(org.fossify.commons.R.string.unknown_error_occurred)
     }

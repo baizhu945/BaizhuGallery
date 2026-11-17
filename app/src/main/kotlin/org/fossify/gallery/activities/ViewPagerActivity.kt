@@ -43,6 +43,7 @@ import org.fossify.commons.dialogs.PropertiesDialog
 import org.fossify.commons.dialogs.RenameItemDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
+import org.fossify.commons.extensions.beInvisible
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
@@ -154,6 +155,12 @@ import org.fossify.gallery.helpers.GO_TO_PREV_ITEM
 import org.fossify.gallery.helpers.HIDE_SYSTEM_UI_DELAY
 import org.fossify.gallery.helpers.HiddenMediaFilter
 import org.fossify.gallery.helpers.HiddenMediaState
+import org.fossify.gallery.helpers.GalleryExecutors
+import org.fossify.gallery.helpers.GalleryPresentationChangeWatch
+import org.fossify.gallery.helpers.LatestGalleryPresentationWork
+import org.fossify.gallery.helpers.copyGalleryPresentationMedium
+import org.fossify.gallery.helpers.captureGalleryPresentationPolicy
+import org.fossify.gallery.extensions.prepareMediaSignatures
 import org.fossify.gallery.helpers.IS_VIEW_INTENT
 import org.fossify.gallery.helpers.MAX_PRINT_SIDE_SIZE
 import org.fossify.gallery.helpers.PATH
@@ -212,6 +219,16 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private var mIsOrientationLocked = false
 
     private var mRequestedHiddenMediaState: HiddenMediaState? = null
+    private var mRequestedPagerPolicy: List<Any?>? = null
+    private fun viewerPresentationPolicy() =
+        captureGalleryPresentationPolicy(this, if (mShowAll) SHOW_ALL else mDirectory)
+    private var mPagerGeneration = 0
+    private var mPagerPresentationGeneration = 0
+    private var mCheckedSlideshowOnEnter = false
+    private var mPortraitNames: Set<String>? = null
+    private var mPagerTask: GetMediaAsynctask? = null
+    private val mPagerWork = LatestGalleryPresentationWork()
+    private val mOrientationWork = LatestGalleryPresentationWork()
     private var mIsViewerInitialized = false
     private var mMediaFiles = ArrayList<Medium>()
     private var mFavoritePaths = ArrayList<String>()
@@ -237,9 +254,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         refreshMenuItems()
 
         window.decorView.setBackgroundColor(getProperBackgroundColor())
-        val hiddenFilter = getHiddenMediaFilter()
-        mMediaFiles = MediaActivity.mMedia.filterIsInstance<Medium>()
-            .filterTo(ArrayList()) { hiddenFilter.matches(it.path) }
+        // Not displayed until the worker has validated the current viewer policy.
+        mMediaFiles = ArrayList(MediaActivity.mMedia.filterIsInstance<Medium>())
 
         requestMediaPermissions {
             initViewPager(
@@ -253,26 +269,18 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     override fun onResume() {
         super.onResume()
         if (!hasPermission(getPermissionToRequest())) {
+            mPagerGeneration++
+            mPagerTask?.stopFetching()
+            mPagerWork.cancel()
+            mMediaFiles = arrayListOf()
+            mSlideshowMedia = mutableListOf()
+            binding.viewPager.beInvisible()
+            binding.viewPager.adapter = null
             finish()
             return
         }
 
-        val hiddenFilter = getHiddenMediaFilter()
-        val hasFilteredMedia = mMediaFiles.any { !matchesViewerFilter(it.path, hiddenFilter) } ||
-            getCurrentMedia().any { !matchesViewerFilter(it.path, hiddenFilter) }
-        if (mPath.isNotEmpty() && hasFilteredMedia) {
-            stopSlideshow()
-            mRandomSlideshowStopped = false
-            mPrevHashcode = 0
-            gotMedia(
-                mMediaFiles as ArrayList<ThumbnailItem>, ignorePlayingVideos = true, refetchViewPagerPosition = true
-            )
-            if (isFinishing) {
-                return
-            }
-        }
-
-        if (mIsViewerInitialized && mPath.isNotEmpty() && mRequestedHiddenMediaState != hiddenFilterState()) {
+        if (viewerNeedsPolicyRefresh()) {
             refreshViewPager(true)
         }
 
@@ -285,6 +293,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         binding.mediumViewerToolbar.title = filename
     }
 
+    private fun viewerNeedsPolicyRefresh(): Boolean {
+        if (!mIsViewerInitialized || mPath.isEmpty()) return false
+        return mRequestedHiddenMediaState != hiddenFilterState() || mRequestedPagerPolicy != viewerPresentationPolicy()
+    }
+
     override fun onPause() {
         super.onPause()
         stopSlideshow()
@@ -292,6 +305,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     override fun onDestroy() {
         super.onDestroy()
+        mPagerGeneration++
+        mPagerTask?.stopFetching()
+        mPagerWork.cancel()
+        mOrientationWork.cancel()
         ColorModeHelper.resetColorMode(this)
 
         if (intent.extras?.containsKey(IS_VIEW_INTENT) == true) {
@@ -441,32 +458,57 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initViewPager(savedPath: String) {
-        val uri = intent.data
-        if (uri != null) {
-            mPath = savedPath.ifEmpty { getDataColumn(uri).orEmpty() }
-        } else {
+        val generation = ++mPagerGeneration
+        val state = hiddenFilterState()
+        mPagerWork.submit(GalleryExecutors.media) {
             try {
-                mPath = savedPath.ifEmpty { intent.getStringExtra(PATH).orEmpty() }
-
-                // make sure "Open Recycle Bin" works well with "Show all folders content"
-                mShowAll = config.showAll && (mPath.isNotEmpty() && !mPath.startsWith(recycleBinPath))
+                val path = resolveInitialViewerPath(savedPath)
+                val showAll = shouldShowAllForPath(path)
+                val exists = initialViewerPathExists(path)
+                runOnUiThread {
+                    if (generation != mPagerGeneration || isDestroyed) return@runOnUiThread
+                    if (state != hiddenFilterState()) { initViewPager(savedPath); return@runOnUiThread }
+                    if (!exists) {
+                        if (path.isEmpty()) toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        finish()
+                        return@runOnUiThread
+                    }
+                    mPath = path
+                    mShowAll = showAll
+                    initResolvedViewPager()
+                }
             } catch (e: Exception) {
-                showErrorToast(e)
-                finish()
-                return
+                runOnUiThread {
+                    if (generation == mPagerGeneration && !isDestroyed) {
+                        showErrorToast(e)
+                        finish()
+                    }
+                }
             }
         }
+    }
 
-        if (savedPath.isEmpty() && intent.extras?.containsKey(REAL_FILE_PATH) == true) {
-            mPath = intent.extras!!.getString(REAL_FILE_PATH)!!
+    private fun resolveInitialViewerPath(savedPath: String): String {
+        if (savedPath.isNotEmpty()) return savedPath
+        if (intent.extras?.containsKey(REAL_FILE_PATH) == true) {
+            return intent.extras?.getString(REAL_FILE_PATH).orEmpty()
         }
+        val uri = intent.data ?: return intent.getStringExtra(PATH).orEmpty()
+        return getDataColumn(uri).orEmpty()
+    }
 
-        if (mPath.isEmpty()) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
-            finish()
-            return
-        }
+    private fun shouldShowAllForPath(path: String): Boolean {
+        if (intent.data != null || !config.showAll) return false
+        return path.isNotEmpty() && !path.startsWith(recycleBinPath)
+    }
 
+    private fun initialViewerPathExists(path: String): Boolean {
+        if (path.isEmpty()) return false
+        if (getPortraitPath().isNotEmpty() || path.isPortrait()) return true
+        return getDoesFilePathExist(path)
+    }
+
+    private fun initResolvedViewPager() {
         if (mPath.isPortrait() && getPortraitPath() == "") {
             val newIntent = Intent(this, ViewPagerActivity::class.java)
             newIntent.putExtras(intent!!.extras!!)
@@ -474,11 +516,6 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             newIntent.putExtra(PATH, "${mPath.getParentPath().getParentPath()}/${mPath.getFilenameFromPath()}")
 
             startActivity(newIntent)
-            finish()
-            return
-        }
-
-        if (!getDoesFilePathExist(mPath) && getPortraitPath() == "") {
             finish()
             return
         }
@@ -499,25 +536,35 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initContinue() {
-        mIsViewerInitialized = true
-        if (!matchesViewerFilter(mPath)) {
-            mMediaFiles.clear()
-            finish()
-            return
+        val state = hiddenFilterState()
+        val generation = ++mPagerGeneration
+        mPagerWork.submit(GalleryExecutors.media) {
+            val portraitPath = getPortraitPath()
+            val portraitNames = if (portraitPath.isEmpty()) null else File(portraitPath).parentFile?.list()?.toHashSet()
+            val allowed = matchesViewerFilter(mPath)
+            val needsShowHidden = intent.extras?.containsKey(IS_VIEW_INTENT) == true &&
+                !config.filterHiddenOnly && isShowHiddenFlagNeeded()
+            runOnUiThread {
+                if (generation != mPagerGeneration || state != hiddenFilterState() || isDestroyed) return@runOnUiThread
+                if (!allowed) {
+                    mMediaFiles.clear()
+                    finish()
+                } else {
+                    mPortraitNames = portraitNames
+                    initContinuePrepared(needsShowHidden)
+                }
+            }
         }
+    }
+
+    private fun initContinuePrepared(needsShowHidden: Boolean) {
+        mIsViewerInitialized = true
         if (intent.action == Intent.ACTION_VIEW) {
             mMediaFiles = mMediaFiles.filterTo(ArrayList()) { it.path == mPath }
         }
-        if (intent.extras?.containsKey(IS_VIEW_INTENT) == true) {
-            if (!config.filterHiddenOnly && isShowHiddenFlagNeeded()) {
-                if (!config.isHiddenPasswordProtectionOn) {
-                    config.temporarilyShowHidden = true
-                }
-            }
+        configureExternalViewerPolicy(needsShowHidden)
 
-            config.isThirdPartyIntent = true
-        }
-
+        mRequestedHiddenMediaState = hiddenFilterState()
         val isShowingFavorites = intent.getBooleanExtra(SHOW_FAVORITES, false)
         val isShowingRecycleBin = intent.getBooleanExtra(SHOW_RECYCLE_BIN, false)
         mDirectory = when {
@@ -525,27 +572,18 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             isShowingRecycleBin -> RECYCLE_BIN
             else -> mPath.getParentPath()
         }
+        mRequestedPagerPolicy = viewerPresentationPolicy()
         binding.mediumViewerToolbar.title = mPath.getFilenameFromPath()
 
         binding.viewPager.onGlobalLayout {
             if (!isDestroyed) {
                 if (mMediaFiles.isNotEmpty()) {
                     gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = true)
-                    checkSlideshowOnEnter()
                 }
             }
         }
 
-        // show the selected image asap, while loading the rest in the background to allow swiping between them. Might be needed at third party intents
-        val canShowSelectedPath = mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES
-        if (canShowSelectedPath && matchesViewerFilter(mPath)) {
-            val filename = mPath.getFilenameFromPath()
-            val folder = mPath.getParentPath()
-            val type = getTypeFromPath(mPath)
-            val medium = Medium(null, filename, mPath, folder, 0, 0, 0, type, 0, false, 0L, 0L)
-            mMediaFiles.add(medium)
-            gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = true)
-        }
+        showInitialViewerTarget()
 
         refreshViewPager(true)
         binding.viewPager.offscreenPageLimit = 2
@@ -563,6 +601,25 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             }
         }
 
+        cacheCameraReviewMedia()
+    }
+
+    private fun configureExternalViewerPolicy(needsShowHidden: Boolean) {
+        if (intent.extras?.containsKey(IS_VIEW_INTENT) != true) return
+        if (needsShowHidden && !config.isHiddenPasswordProtectionOn) config.temporarilyShowHidden = true
+        config.isThirdPartyIntent = true
+    }
+
+    private fun showInitialViewerTarget() {
+        if (mMediaFiles.isNotEmpty() || mPath.isEmpty() || mDirectory == FAVORITES) return
+        val filename = mPath.getFilenameFromPath()
+        val folder = mPath.getParentPath()
+        val type = getTypeFromPath(mPath)
+        mMediaFiles.add(Medium(null, filename, mPath, folder, 0, 0, 0, type, 0, false, 0L, 0L))
+        gotMedia(ArrayList<ThumbnailItem>(mMediaFiles), refetchViewPagerPosition = true)
+    }
+
+    private fun cacheCameraReviewMedia() {
         if (
             intent.action == "com.android.camera.action.REVIEW"
             || intent.action == MediaStore.ACTION_REVIEW
@@ -838,24 +895,22 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun toggleFileVisibility(hide: Boolean, callback: (() -> Unit)? = null) {
-        toggleFileVisibility(getCurrentPath(), hide) {
-            val newFileName = it.getFilenameFromPath()
-            binding.mediumViewerToolbar.title = newFileName
-
-            getCurrentMedium()!!.apply {
-                name = newFileName
-                path = it
-                getCurrentMedia()[mPos] = this
-            }
-
-            refreshMenuItems()
-            callback?.invoke()
-            if (!matchesViewerFilter(it)) {
-                stopSlideshow()
-                mRandomSlideshowStopped = false
-                mPrevHashcode = 0
+        toggleFileVisibility(getCurrentPath(), hide) { path ->
+            runOnUiThread {
+                GalleryPresentationChangeWatch.markChanged()
+                val newFileName = path.getFilenameFromPath()
+                binding.mediumViewerToolbar.title = newFileName
+                getCurrentMedium()?.apply {
+                    name = newFileName
+                    this.path = path
+                    getCurrentMedia()[mPos] = this
+                }
+                // The renamed target has not yet been validated; remove its old fragment now.
+                binding.viewPager.beInvisible()
+                binding.viewPager.adapter = null
+                callback?.invoke()
                 gotMedia(
-                    mMediaFiles as ArrayList<ThumbnailItem>, ignorePlayingVideos = true, refetchViewPagerPosition = true
+                    ArrayList<ThumbnailItem>(mMediaFiles), ignorePlayingVideos = true, refetchViewPagerPosition = true
                 )
             }
         }
@@ -1118,6 +1173,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         medium.isFavorite = !medium.isFavorite
         ensureBackgroundThread {
             updateFavorite(medium.path, medium.isFavorite)
+            GalleryPresentationChangeWatch.markChanged()
             if (medium.isFavorite) {
                 mFavoritePaths.add(medium.path)
             } else {
@@ -1377,97 +1433,176 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun refreshViewPager(refetchPosition: Boolean = false) {
-        if (intent.action == Intent.ACTION_VIEW) {
-            mRequestedHiddenMediaState = hiddenFilterState()
-            gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = refetchPosition)
+        val filterState = hiddenFilterState()
+        val policy = viewerPresentationPolicy()
+        val hasPolicyChanged = mRequestedHiddenMediaState != filterState || mRequestedPagerPolicy != policy
+        val explicitTarget = if (intent.action == Intent.ACTION_VIEW) ArrayList(mMediaFiles) else null
+        val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
+        val canReuseRandomOrder = !hasPolicyChanged && isRandomSorting && !isExternalIntent()
+        if (canReuseRandomOrder && explicitTarget == null) {
+            if (binding.viewPager.adapter == null) {
+                gotMedia(ArrayList<ThumbnailItem>(mMediaFiles), refetchViewPagerPosition = refetchPosition)
+            }
             return
         }
-        val filterState = hiddenFilterState()
-        val hasPolicyChanged = mRequestedHiddenMediaState != filterState
-        mRequestedHiddenMediaState = filterState
-        val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
-        if (hasPolicyChanged || !isRandomSorting || isExternalIntent()) {
-            GetMediaAsynctask(applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll) {
-                if (filterState == hiddenFilterState()) {
-                    gotMedia(it, refetchViewPagerPosition = refetchPosition)
-                }
-            }.execute()
+        val generation = ++mPagerGeneration
+        mPagerTask?.stopFetching()
+        mPagerWork.cancel()
+        mPagerPresentationGeneration++
+        if (hasPolicyChanged) {
+            stopSlideshow()
+            mRandomSlideshowStopped = false
+            mPrevHashcode = 0
+            mMediaFiles = arrayListOf()
+            mSlideshowMedia = mutableListOf()
+            binding.viewPager.beInvisible()
+            binding.viewPager.adapter = null
         }
+        mRequestedHiddenMediaState = filterState
+        mRequestedPagerPolicy = policy
+        if (explicitTarget != null) {
+            gotMedia(ArrayList<ThumbnailItem>(explicitTarget), refetchViewPagerPosition = refetchPosition)
+            return
+        }
+        requestPagerMedia(generation, filterState, policy, refetchPosition)
+    }
+
+    private fun requestPagerMedia(
+        generation: Int, filterState: HiddenMediaState, policy: List<Any?>, refetchPosition: Boolean
+    ) {
+        mPagerTask = GetMediaAsynctask(
+            applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll
+        ) {
+            runOnUiThread {
+                if (generation != mPagerGeneration || isDestroyed) return@runOnUiThread
+                if (filterState != hiddenFilterState() || policy != viewerPresentationPolicy()) {
+                    refreshViewPager(true)
+                    return@runOnUiThread
+                }
+                gotMedia(it, refetchViewPagerPosition = refetchPosition)
+            }
+        }.apply { executeOnExecutor(GalleryExecutors.media) }
     }
 
     private fun gotMedia(thumbnailItems: ArrayList<ThumbnailItem>, ignorePlayingVideos: Boolean = false, refetchViewPagerPosition: Boolean = false) {
-        val hiddenFilter = getHiddenMediaFilter()
-        val media = thumbnailItems.asSequence().filter {
-            it is Medium && !mIgnoredPaths.contains(it.path) && matchesViewerFilter(it.path, hiddenFilter)
-        }.map { it as Medium }.toMutableList() as ArrayList<Medium>
-
-        if (isDirEmpty(media) || media.hashCode() == mPrevHashcode) {
-            return
+        runOnUiThread request@{
+            val state = hiddenFilterState()
+            val policy = viewerPresentationPolicy()
+            val generation = mPagerGeneration
+            val presentation = ++mPagerPresentationGeneration
+            val source = ArrayList(thumbnailItems)
+            val slideshow = ArrayList(mSlideshowMedia)
+            val current = ArrayList(getCurrentMedia())
+            val ignored = mIgnoredPaths.toHashSet()
+            mPagerWork.submit(GalleryExecutors.media) {
+                val filter = getHiddenMediaFilter()
+                val media = visibleViewerMedia(source, ignored, filter)
+                val slides = visibleViewerMedia(slideshow, ignored, filter)
+                val hasFilteredCurrentMedia = current.any { !matchesViewerFilter(it.path, filter) }
+                prepareMediaSignatures(media)
+                prepareMediaSignatures(slides)
+                if (Thread.currentThread().isInterrupted) return@submit
+                runOnUiThread publish@{
+                    if (generation != mPagerGeneration || isDestroyed) return@publish
+                    if (presentation != mPagerPresentationGeneration) return@publish
+                    if (state != hiddenFilterState() || policy != viewerPresentationPolicy()) {
+                        refreshViewPager(true)
+                        return@publish
+                    }
+                    publishPagerMedia(
+                        media, slides, hasFilteredCurrentMedia, ignorePlayingVideos, refetchViewPagerPosition
+                    )
+                }
+            }
         }
+    }
 
+    private fun visibleViewerMedia(
+        items: List<ThumbnailItem>, ignored: Set<String>, filter: HiddenMediaFilter
+    ): ArrayList<Medium> {
+        val result = ArrayList<Medium>()
+        for (item in items) {
+            if (Thread.currentThread().isInterrupted) break
+            if (item is Medium && item.path !in ignored && matchesViewerFilter(item.path, filter)) {
+                result.add(item.copyGalleryPresentationMedium())
+            }
+        }
+        return result
+    }
+
+    private fun publishPagerMedia(
+        media: ArrayList<Medium>, slides: MutableList<Medium>, filteredCurrent: Boolean,
+        ignorePlayingVideos: Boolean, refetchPosition: Boolean
+    ) {
+        if (isDirEmpty(media)) return
+        val unchanged = mPrevHashcode != 0 && samePagerContent(media) && binding.viewPager.adapter != null
+        if (unchanged && !filteredCurrent) return
+        if (filteredCurrent) {
+            stopSlideshow()
+            mRandomSlideshowStopped = false
+        }
         val isPlaying = (getCurrentFragment() as? VideoFragment)?.mIsPlaying == true
-        val hasFilteredCurrentMedia = getCurrentMedia().any { !matchesViewerFilter(it.path, hiddenFilter) }
-        val canKeepPlaying = !ignorePlayingVideos && isPlaying && !isExternalIntent()
-        if (!hasFilteredCurrentMedia && canKeepPlaying) {
-            return
-        }
+        val keepPlaying = !ignorePlayingVideos && isPlaying && !isExternalIntent()
+        if (!filteredCurrent && keepPlaying) return
+        applyPagerPresentation(media, slides, refetchPosition)
+    }
 
-        refreshUI(media, refetchViewPagerPosition)
+    private fun samePagerContent(media: List<Medium>): Boolean {
+        if (media != mMediaFiles) return false
+        // Room-ignored fallback timestamps deliberately do not participate in Medium.equals().
+        return media.indices.all { media[it].thumbnailModified == mMediaFiles[it].thumbnailModified }
     }
 
     private fun refreshUI(media: ArrayList<Medium>, refetchViewPagerPosition: Boolean) {
-        val hiddenFilter = getHiddenMediaFilter()
-        val visible = media.filterTo(ArrayList()) { matchesViewerFilter(it.path, hiddenFilter) }
-        if (isDirEmpty(visible)) {
-            return
-        }
+        GalleryPresentationChangeWatch.markChanged()
+        gotMedia(
+            ArrayList<ThumbnailItem>(media), ignorePlayingVideos = true,
+            refetchViewPagerPosition = refetchViewPagerPosition
+        )
+    }
+
+    private fun applyPagerPresentation(visible: ArrayList<Medium>, slides: MutableList<Medium>, refetchViewPagerPosition: Boolean) {
         mPrevHashcode = visible.hashCode()
         mMediaFiles = visible
-        mSlideshowMedia = mSlideshowMedia.filter { matchesViewerFilter(it.path, hiddenFilter) }.toMutableList()
-
+        mSlideshowMedia = slides
         mPos = if (refetchViewPagerPosition || mPos == -1) {
             getPositionInList(visible).coerceIn(0, visible.lastIndex)
         } else {
             mPos.coerceIn(0, visible.lastIndex)
         }
-
         updateActionbarTitle()
         updatePagerItems(mMediaFiles.toMutableList())
-
+        binding.viewPager.beVisible()
         refreshMenuItems()
         checkOrientation()
         initBottomActions()
+        if (!mCheckedSlideshowOnEnter) {
+            mCheckedSlideshowOnEnter = true
+            checkSlideshowOnEnter()
+        }
     }
 
     private fun getPositionInList(items: MutableList<Medium>): Int {
-        mPos = 0
+        val portraitPath = getPortraitPath()
         for ((i, medium) in items.withIndex()) {
-            val portraitPath = getPortraitPath()
-            if (portraitPath != "") {
-                val portraitPaths = File(portraitPath).parentFile?.list()
-                if (portraitPaths != null) {
-                    for (path in portraitPaths) {
-                        if (medium.name == path) {
-                            return i
-                        }
-                    }
-                }
+            if (portraitPath.isNotEmpty()) {
+                if (mPortraitNames?.contains(medium.name) == true) return i
             } else if (medium.path.equals(mPath, true)) {
                 return i
             }
         }
-        return mPos
+        return 0
     }
 
     private fun deleteDirectoryIfEmpty() {
         if (config.deleteEmptyFolders && !config.isHiddenMediaFilteringActive) {
-            val fileDirItem = FileDirItem(mDirectory, mDirectory.getFilenameFromPath(), File(mDirectory).isDirectory)
-            if (!fileDirItem.isDownloadsFolder() && fileDirItem.isDirectory) {
-                ensureBackgroundThread {
-                    if (fileDirItem.getProperFileCount(this, true) == 0) {
-                        tryDeleteFileDirItem(fileDirItem, true, true)
-                        scanPathRecursively(mDirectory)
-                    }
+            val directory = mDirectory
+            GalleryExecutors.media.execute {
+                val fileDirItem = FileDirItem(directory, directory.getFilenameFromPath(), File(directory).isDirectory)
+                val canDelete = !fileDirItem.isDownloadsFolder() && fileDirItem.isDirectory
+                if (canDelete && fileDirItem.getProperFileCount(this, true) == 0) {
+                    tryDeleteFileDirItem(fileDirItem, true, true)
+                    scanPathRecursively(directory)
                 }
             }
         }
@@ -1475,23 +1610,45 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     @SuppressLint("SourceLockedOrientationActivity")
     private fun checkOrientation() {
+        mOrientationWork.cancel()
         if (!mIsOrientationLocked && config.screenRotation == ROTATE_BY_ASPECT_RATIO) {
-            var flipSides = false
-            try {
-                val pathToLoad = getCurrentPath()
-                val exif = ExifInterface(pathToLoad)
-                val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1)
-                flipSides = orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_ROTATE_270
-            } catch (e: Exception) {
+            val path = getCurrentPath()
+            val generation = mPagerGeneration
+            val state = hiddenFilterState()
+            mOrientationWork.submit(GalleryExecutors.media) {
+                val orientation = prepareAspectOrientation(path) ?: return@submit
+                runOnUiThread {
+                    if (!isOrientationRequestCurrent(path, generation, state)) return@runOnUiThread
+                    requestedOrientation = orientation
+                }
             }
-            val resolution = applicationContext.getResolution(getCurrentPath()) ?: return
-            val width = if (flipSides) resolution.y else resolution.x
-            val height = if (flipSides) resolution.x else resolution.y
-            if (width > height) {
-                requestedOrientation = SCREEN_ORIENTATION_LANDSCAPE
-            } else if (width < height) {
-                requestedOrientation = SCREEN_ORIENTATION_PORTRAIT
-            }
+        }
+    }
+
+    private fun isOrientationRequestCurrent(path: String, generation: Int, state: HiddenMediaState): Boolean {
+        if (isDestroyed || mIsOrientationLocked) return false
+        if (generation != mPagerGeneration || state != hiddenFilterState()) return false
+        return path == getCurrentPath() && config.screenRotation == ROTATE_BY_ASPECT_RATIO
+    }
+
+    private fun prepareAspectOrientation(path: String): Int? {
+        val flipSides = hasQuarterTurnExif(path)
+        val resolution = applicationContext.getResolution(path) ?: return null
+        val width = if (flipSides) resolution.y else resolution.x
+        val height = if (flipSides) resolution.x else resolution.y
+        return when {
+            width > height -> SCREEN_ORIENTATION_LANDSCAPE
+            width < height -> SCREEN_ORIENTATION_PORTRAIT
+            else -> null
+        }
+    }
+
+    private fun hasQuarterTurnExif(path: String): Boolean {
+        return try {
+            val orientation = ExifInterface(path).getAttributeInt(ExifInterface.TAG_ORIENTATION, -1)
+            orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_ROTATE_270
+        } catch (e: Exception) {
+            false
         }
     }
 

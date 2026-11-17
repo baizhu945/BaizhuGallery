@@ -14,17 +14,17 @@ class HiddenMediaFilter(
 
     fun matches(path: String): Boolean {
         val pathToCheck = originalPath(path)
-        if (!isHidden(path)) {
+        if (!isPhysicallyHidden(pathToCheck)) {
             return !onlyHidden
         }
 
         return hiddenAccessAllowed && (includeOtherHidden || isUserHidden(pathToCheck))
     }
 
-    fun isHidden(path: String): Boolean {
-        val pathToCheck = originalPath(path)
-        return pathToCheck.startsWith('.') || pathToCheck.contains("/.") || isDirectoryHidden(File(pathToCheck).parent)
-    }
+    fun isHidden(path: String): Boolean = isPhysicallyHidden(originalPath(path))
+
+    private fun isPhysicallyHidden(path: String): Boolean =
+        path.startsWith('.') || path.contains("/.") || isDirectoryHidden(File(path).parent)
 
     private fun isDirectoryHidden(path: String?): Boolean {
         if (path == null) {

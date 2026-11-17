@@ -100,5 +100,50 @@ fun runUserHiddenPathsTests() {
             check(!registry.matches("", noMarkers))
         }
     }
+    test("media queries skip filename probes but general folder queries retain them") {
+        val registry = UserHiddenPaths(emptySet(), setOf("/private"))
+        val probes = mutableListOf<String>()
+        val marker: (String) -> Boolean = { probes.add(it); it == "/private/sub/a.jpg" }
+        check(registry.matchesMedia("/private/sub/a.jpg", marker))
+        check(probes == listOf("/private/sub"))
+        probes.clear()
+        check(!registry.matches("/private/sub/a.jpg", marker))
+        check(probes == listOf("/private/sub", "/private/sub/a.jpg"))
+        probes.clear()
+        check(!registry.matchesMedia("/private/sub/.a.jpg", marker))
+        check(probes == listOf("/private/sub"))
+    }
+    test("large folder registries still use the deepest explicit root") {
+        val folders = (0 until 20_000).mapTo(HashSet()) { "/unrelated/$it" }
+        folders.addAll(listOf("/", "/private", "/private/.child"))
+        val registry = UserHiddenPaths(emptySet(), folders)
+        folders.clear()
+        check(registry.matchesMedia("/private/.child/a.jpg", noMarkers))
+        check(!registry.matchesMedia("/private/.other/a.jpg", noMarkers))
+        check(!registry.matchesMedia("relative/a.jpg", noMarkers))
+    }
+    test("published sets cannot mutate registry state") {
+        val registry = UserHiddenPaths(setOf("/a.jpg/"), setOf("/private/"))
+        for (paths in listOf(registry.files, registry.folders)) {
+            try {
+                (paths as MutableSet<String>).clear()
+                error("Published set was mutable")
+            } catch (_: UnsupportedOperationException) {
+                // A cached snapshot must be safe to share with arbitrary callers.
+            }
+        }
+        check(registry.matchesMedia("/a.jpg", noMarkers))
+        check(registry.matchesMedia("/private/a.jpg", noMarkers))
+    }
+    test("media queries do not cache external marker decisions") {
+        val registry = UserHiddenPaths(emptySet(), setOf("/private"))
+        var marked = false
+        val marker: (String) -> Boolean = { marked }
+        check(registry.matchesMedia("/private/sub/a.jpg", marker))
+        marked = true
+        check(!registry.matchesMedia("/private/sub/a.jpg", marker))
+        marked = false
+        check(registry.matchesMedia("/private/sub/a.jpg", marker))
+    }
     println("Passed $passed production registry tests.")
 }
