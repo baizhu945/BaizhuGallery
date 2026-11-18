@@ -56,6 +56,15 @@ current owner. For legacy activity-bound storage callbacks, the current screen
 orientation is temporarily held and the original orientation policy is restored
 when the operation ends. Home/backgrounding is distinct from cancelling.
 
+For progress when the gallery is minimized, enable **Settings → File operations
+→ Batch progress notifications** in Android's notification settings. A silent
+notification shows the current phase and confirmed item/byte counts, without file
+names or lock-screen content. It does not depend on the window staying visible.
+Returning to the operation restores its dialog if it was not explicitly hidden
+and no confirmation is open. Dismissing the dialog does not stop the notification
+or the batch. When notifications are blocked, progress is available again on
+returning to the operation; the app does not override Android's permission.
+
 Foreground ownership does not promise an operating-system background service or
 unconditional continuation after process death. Owned loops stop at safe boundaries
 on host destruction; completed results are retained. A durable pending-operation

@@ -1,0 +1,1 @@
+Fixed batch progress when Gallery is minimized: enable Batch progress notifications in Settings. Returning restores the live dialog. Turning off Hidden only now removes its temporary reveal without changing an explicitly enabled Show hidden setting.

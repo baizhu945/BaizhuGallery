@@ -10,6 +10,7 @@ import org.fossify.commons.helpers.NOMEDIA
 import org.fossifymigration.baizhu.gallery.R
 import org.fossifymigration.baizhu.gallery.activities.SimpleActivity
 import org.fossifymigration.baizhu.gallery.databases.GalleryDatabase
+import org.fossifymigration.baizhu.gallery.helpers.GalleryPresentationChangeWatch
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -158,6 +159,9 @@ private class VisibilityOwner(
 
     private fun refreshBatch() {
         if (changes.scanPaths.isEmpty()) return
+        // Verified filesystem changes invalidate prepared snapshots even if the registry was unchanged
+        // or MediaStore does not notify us (e.g. an already owned folder gets a new .nomedia).
+        GalleryPresentationChangeWatch.markChanged()
         activity.runOnUiThread { if (!closed()) phase() }
         val scanned = callbacks.awaitCallback<Boolean>(stopOnClose = false) { reply ->
             activity.applicationContext.rescanPaths(changes.scanPaths.toList()) { reply(true) }

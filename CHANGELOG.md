@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1]
+### Fixed
+- Show real batch progress in the notification shade when notifications are enabled, even if the window is minimized. On return, restore an active progress dialog unless it was hidden by the user or a confirmation is open.
+- Leaving Hidden only drops the temporary reveal opened by that filter and refreshes the current list. Separately enabled Show hidden settings are preserved.
+
 ## [1.15.0]
 ### Changed
 - Independent BaizhuGallery release in `baizhu945/BaizhuGallery`; launcher name remains Gallery.

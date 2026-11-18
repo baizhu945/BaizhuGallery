@@ -13,8 +13,8 @@ fun BaseSimpleActivity.toggleHiddenOnly(onChanged: () -> Unit) {
         config.filterHiddenOnly = false
         onChanged()
     } else {
-        requestHiddenMediaAccess {
-            config.filterHiddenOnly = true
+        withHiddenMediaAuthorization { needsTemporaryAccess ->
+            if (needsTemporaryAccess) config.enableHiddenOnlyWithTemporaryAccess() else config.filterHiddenOnly = true
             onChanged()
         }
     }
@@ -35,18 +35,25 @@ fun BaseSimpleActivity.toggleOtherHidden(onChanged: () -> Unit) {
 }
 
 internal fun BaseSimpleActivity.requestHiddenMediaAccess(onGranted: () -> Unit) {
+    withHiddenMediaAuthorization { needsTemporaryAccess ->
+        if (needsTemporaryAccess) config.temporarilyShowHidden = true
+        onGranted()
+    }
+}
+
+private fun BaseSimpleActivity.withHiddenMediaAuthorization(onGranted: (needsTemporaryAccess: Boolean) -> Unit) {
     if (isRPlus() && !isExternalStorageManager()) {
         GrantAllFilesDialog(this)
     } else if (config.shouldShowHidden) {
-        onGranted()
+        onGranted(false)
     } else {
         handleHiddenFolderPasswordProtection {
             // Authentication is asynchronous; storage access can change while it is open.
+            if (isFinishing || isDestroyed) return@handleHiddenFolderPasswordProtection
             if (isRPlus() && !isExternalStorageManager()) {
                 GrantAllFilesDialog(this)
             } else {
-                config.temporarilyShowHidden = true
-                onGranted()
+                onGranted(!config.shouldShowHidden)
             }
         }
     }

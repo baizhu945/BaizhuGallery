@@ -17,3 +17,7 @@ timeout 60s kotlinc \
     "$repo/app/src/main/kotlin/org/fossifymigration/baizhu/gallery/extensions/BulkVisibilityFiles.kt" \
     "$here/BulkVisibilityFilesTest.kt" -include-runtime -d "$work/tests.jar"
 timeout --kill-after=1s 5s java -jar "$work/tests.jar" "$work/cases"
+timeout 60s kotlinc \
+    "$repo/app/src/main/kotlin/org/fossifymigration/baizhu/gallery/helpers/BulkProgressDisplay.kt" \
+    "$here/BulkProgressDisplayTest.kt" -include-runtime -d "$work/progress-tests.jar"
+timeout --kill-after=1s 5s java -jar "$work/progress-tests.jar"

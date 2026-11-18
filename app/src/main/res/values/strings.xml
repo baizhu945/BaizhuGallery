@@ -58,6 +58,11 @@
     <string name="bulk_current_file_bytes">Current file: %1$s / %2$s written</string>
     <string name="bulk_hide_progress">Hide progress</string>
     <string name="bulk_progress_note">Hiding this dialog does not cancel the operation.</string>
+    <string name="bulk_progress_notifications">Batch progress notifications</string>
+    <string name="bulk_progress_notification_description">Show active batch operations while the gallery window is minimized.</string>
+    <string name="bulk_progress_notification_hint">Check the notification shade for progress when minimized.</string>
+    <string name="bulk_progress_notification_disabled">For progress when minimized, enable batch progress notifications in Settings.</string>
+    <string name="bulk_waiting_input">Waiting for your response…</string>
     <string name="bulk_already_running">An operation is still running. Do not repeat it.</string>
     <string name="bulk_operation_partial">Some items were not processed. The library has been refreshed.</string>
     <string name="bulk_operation_failed">Operation could not be completed. Check storage access and try again.</string>

@@ -36,6 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           bash tests/hidden-media-filter/run.sh
+          bash tests/hidden-refresh/run.sh
           bash tests/bulk-operations/run.sh
       - name: Test Commons compatibility guards
         run: |

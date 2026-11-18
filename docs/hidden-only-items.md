@@ -37,16 +37,20 @@ through **Settings → Manage included folders**.
 ## Permission and session behavior
 
 On Android 11+, all-files access is required. Activation uses the existing
-hidden-item password protection and temporary hidden session. Cancelling either
-prompt does not enable the filter. Storage access is checked again after
+hidden-item password protection. If the filter itself needs to unlock hidden
+media, that temporary authorization applies only while **Hidden only** is active.
+Cancelling either prompt does not enable the filter. Storage access is checked again after
 asynchronous authentication.
 
 The filter preference persists like the existing media-type filter, but it is
 **not authorization**. A cold launch or expired temporary session can leave a
 checked, empty hidden-only view. Use **Temporarily show hidden** to unlock it
 again, or uncheck **Hidden only** to return to normal browsing.
-**Stop showing hidden** also clears the hidden-only filter. Turning off just
-the filter does not end an already authorized hidden session.
+**Stop showing hidden** also clears the hidden-only filter. Turning off the
+filter immediately drops its own temporary authorization and refreshes the list;
+it does not change a separately enabled **Show hidden** setting or an explicitly
+authorized **Temporarily show hidden** session. Old temporary sessions from
+1.15.0 retain their existing stop/expiry behavior.
 
 This feature does not encrypt or secure the underlying files. Explicit external
 Android `ACTION_VIEW` requests can still display their requested target; while

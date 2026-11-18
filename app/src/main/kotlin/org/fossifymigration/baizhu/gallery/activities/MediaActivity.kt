@@ -91,6 +91,7 @@ import org.fossifymigration.baizhu.gallery.helpers.GET_ANY_INTENT
 import org.fossifymigration.baizhu.gallery.helpers.GET_IMAGE_INTENT
 import org.fossifymigration.baizhu.gallery.helpers.GET_VIDEO_INTENT
 import org.fossifymigration.baizhu.gallery.helpers.GridSpacingItemDecoration
+import org.fossifymigration.baizhu.gallery.helpers.HiddenMediaRequest
 import org.fossifymigration.baizhu.gallery.helpers.HiddenMediaState
 import org.fossifymigration.baizhu.gallery.helpers.GalleryExecutors
 import org.fossifymigration.baizhu.gallery.helpers.GALLERY_QUERY_DEBOUNCE_MS
@@ -715,7 +716,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun getMedia() {
         val state = hiddenFilterState()
-        if (mRequestedHiddenMediaState != state) {
+        val policy = presentationPolicy()
+        if (mRequestedHiddenMediaState != state || mRequestedPolicy != policy) {
             mMediaGeneration++
             mCurrAsyncTask?.stopFetching()
             mIsGettingMedia = false
@@ -730,11 +732,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         mIsGettingMedia = true
         mReconciliationMedia = ArrayList(mMedia)
         mRequestedRevision = GalleryPresentationChangeWatch.revision
-        mRequestedPolicy = presentationPolicy()
-        val generation = ++mMediaGeneration
-        val filterState = hiddenFilterState()
+        mRequestedPolicy = policy
+        val request = HiddenMediaRequest(++mMediaGeneration, state)
         if (mLoadedInitialPhotos) {
-            startAsyncTask(generation)
+            startAsyncTask(request)
         } else {
             getCachedMedia(
                 mPath,
@@ -743,15 +744,15 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             ) {
                 val cached = it
                 runOnUiThread {
-                    if (generation != mMediaGeneration || isDestroyed) return@runOnUiThread
-                    if (filterState != hiddenFilterState()) { getMedia(); return@runOnUiThread }
+                    if (request.generation != mMediaGeneration || isDestroyed || isFinishing) return@runOnUiThread
+                    if (reloadIfPolicyChanged(request, policy)) return@runOnUiThread
                     mReconciliationMedia = ArrayList(cached)
                     if (cached.isEmpty()) {
                         binding.mediaRefreshLayout.isRefreshing = true
                     } else {
-                        gotMedia(cached, true, generation)
+                        gotMedia(cached, true, request)
                     }
-                    startAsyncTask(generation)
+                    startAsyncTask(request)
                 }
             }
         }
@@ -773,15 +774,19 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         getMediaAdapter()?.updateMedia(arrayListOf())
     }
 
-    private fun isMediaRequestCurrent(generation: Int, filterState: HiddenMediaState) =
-        generation == mMediaGeneration && filterState == hiddenFilterState()
+    private fun isMediaRequestCurrent(request: HiddenMediaRequest) =
+        request.isCurrent(mMediaGeneration, hiddenFilterState())
 
-    private fun startAsyncTask(generation: Int) {
-        if (generation != mMediaGeneration) {
-            return
-        }
-        val filterState = hiddenFilterState()
+    private fun reloadIfPolicyChanged(request: HiddenMediaRequest, policy: List<Any?>): Boolean {
+        if (isMediaRequestCurrent(request) && policy == presentationPolicy()) return false
+        getMedia()
+        return true
+    }
+
+    private fun startAsyncTask(request: HiddenMediaRequest) {
+        if (request.generation != mMediaGeneration) return
         val policy = mRequestedPolicy
+        if (reloadIfPolicyChanged(request, policy)) return
         mCurrAsyncTask?.stopFetching()
         mCurrAsyncTask = GetMediaAsynctask(
             context = applicationContext,
@@ -791,16 +796,11 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             showAll = mShowAll
         ) { newMedia ->
             runOnUiThread {
-                if (generation != mMediaGeneration || isDestroyed) return@runOnUiThread
-                if (filterState != hiddenFilterState() || policy != presentationPolicy()) {
-                    clearPresentation()
-                    mIsGettingMedia = false
-                    getMedia()
-                    return@runOnUiThread
-                }
+                if (request.generation != mMediaGeneration || isDestroyed || isFinishing) return@runOnUiThread
+                if (reloadIfPolicyChanged(request, policy)) return@runOnUiThread
                 val oldMedia = ArrayList(mReconciliationMedia)
-                gotMedia(newMedia, false, generation)
-                reconcileMediaCache(oldMedia, newMedia, generation, filterState)
+                gotMedia(newMedia, false, request)
+                reconcileMediaCache(oldMedia, newMedia, request)
             }
         }
 
@@ -808,16 +808,16 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun reconcileMediaCache(
-        oldMedia: List<ThumbnailItem>, newMedia: List<ThumbnailItem>, generation: Int, filterState: HiddenMediaState
+        oldMedia: List<ThumbnailItem>, newMedia: List<ThumbnailItem>, request: HiddenMediaRequest
     ) {
         GalleryExecutors.database.execute {
             try {
                 val newPaths = newMedia.filterIsInstance<Medium>().mapTo(HashSet()) { it.path }
-                val canReconcile = isMediaRequestCurrent(generation, filterState) &&
-                    !filterState.isFilteringActive && !config.isHiddenMediaFilteringActive
+                val canReconcile = isMediaRequestCurrent(request) &&
+                    !request.state.isFilteringActive && !config.isHiddenMediaFilteringActive
                 if (!canReconcile) return@execute
                 oldMedia.filterIsInstance<Medium>().filter { it.path !in newPaths }.forEach {
-                    if (!isMediaRequestCurrent(generation, filterState)) return@forEach
+                    if (!isMediaRequestCurrent(request)) return@forEach
                     // Absence from a filtered favorite list does not establish deletion.
                     if (!getDoesFilePathExist(it.path)) mediaDB.deleteMediumPath(it.path)
                 }
@@ -1132,15 +1132,12 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private data class MediaPublicationRequest(
-        val generation: Int, val state: HiddenMediaState, val policy: List<Any?>,
-        val revision: Long, val fromCache: Boolean
+        val load: HiddenMediaRequest, val policy: List<Any?>, val revision: Long, val fromCache: Boolean
     )
 
-    private fun gotMedia(media: ArrayList<ThumbnailItem>, isFromCache: Boolean, generation: Int = mMediaGeneration) {
-        runOnUiThread request@{
-            val filterState = mRequestedHiddenMediaState ?: return@request
-            if (!isMediaRequestCurrent(generation, filterState) || isDestroyed) return@request
-            if (!isFromCache) mIsGettingMedia = false
+    private fun gotMedia(media: ArrayList<ThumbnailItem>, isFromCache: Boolean, load: HiddenMediaRequest) {
+        runOnUiThread {
+            if (!isMediaRequestCurrent(load) || isDestroyed || isFinishing) return@runOnUiThread
             val source = ArrayList(media)
             val requestedRevision = mRequestedRevision
             val policy = mRequestedPolicy
@@ -1151,7 +1148,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 if (Thread.currentThread().isInterrupted) return@submit
                 val latestId = getLatestMediaId()
                 val latestDateId = getLatestMediaByDateId()
-                val request = MediaPublicationRequest(generation, filterState, policy, requestedRevision, isFromCache)
+                val request = MediaPublicationRequest(load, policy, requestedRevision, isFromCache)
                 runOnUiThread { publishMediaPresentation(request, prepared, latestId, latestDateId) }
                 if (!isFromCache) storePreparedMedia(request, prepared)
             }
@@ -1178,13 +1175,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun publishMediaPresentation(
         request: MediaPublicationRequest, prepared: ArrayList<ThumbnailItem>, latestId: Long, latestDateId: Long
     ) {
-        if (request.generation != mMediaGeneration || isDestroyed) return
-        if (request.state != hiddenFilterState() || request.policy != presentationPolicy()) {
-            clearPresentation()
-            mIsGettingMedia = false
-            getMedia()
-            return
-        }
+        if (request.load.generation != mMediaGeneration || isDestroyed || isFinishing) return
+        if (reloadIfPolicyChanged(request.load, request.policy)) return
         if (!request.fromCache) {
             mIsGettingMedia = false
             mHasFreshSnapshot = true
@@ -1212,7 +1204,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         val mediaToInsert = prepared.filterIsInstance<Medium>().filter { it.deletedTS == 0L }
         GalleryExecutors.database.execute {
             try {
-                if (isMediaRequestCurrent(request.generation, request.state)) mediaDB.insertAll(mediaToInsert)
+                if (isMediaRequestCurrent(request.load)) mediaDB.insertAll(mediaToInsert)
             } catch (e: Exception) {
             }
         }

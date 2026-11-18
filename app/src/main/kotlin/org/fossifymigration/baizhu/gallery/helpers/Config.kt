@@ -22,6 +22,8 @@ import java.util.Locale
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
+        private const val TEMPORARY_HIDDEN_ONLY = "temporary_hidden_only"
+
         // Config instances share the same preferences, so the lock must also be shared.
         private val hiddenRegistryLock = Any()
         // One immutable snapshot, shared by Config instances. Never retain a preferences-owned set.
@@ -75,7 +77,7 @@ class Config(context: Context) : BaseConfig(context) {
     }
 
     val isHiddenMediaFilteringActive: Boolean
-        get() = filterHiddenOnly || !includeOtherHidden || !(showHiddenMedia || temporarilyShowHidden) ||
+        get() = filterHiddenOnly || !includeOtherHidden || !shouldShowHidden ||
             (isRPlus() && !isExternalStorageManager())
 
     private fun readUserHiddenPaths(key: String): Set<String> =
@@ -205,15 +207,27 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(HIDE_FOLDER_TOOLTIP_SHOWN, false)
         set(wasShown) = prefs.edit().putBoolean(HIDE_FOLDER_TOOLTIP_SHOWN, wasShown).apply()
 
-    var shouldShowHidden = showHiddenMedia || temporarilyShowHidden
+    val shouldShowHidden: Boolean
+        get() = shouldRevealHiddenMedia(showHiddenMedia, temporaryShowHidden, filterHiddenOnly, temporaryHiddenOnly)
+
+    private val temporaryShowHidden: Boolean
+        get() = prefs.getBoolean(TEMPORARILY_SHOW_HIDDEN, false)
+
+    private val temporaryHiddenOnly: Boolean
+        get() = prefs.getBoolean(TEMPORARY_HIDDEN_ONLY, false)
 
     var showHiddenMedia: Boolean
         get() = prefs.getBoolean(SHOW_HIDDEN_MEDIA, false)
         set(showHiddenFolders) = prefs.edit().putBoolean(SHOW_HIDDEN_MEDIA, showHiddenFolders).apply()
 
+    // Includes scoped access for the existing Stop showing hidden control and expiry handlers.
     var temporarilyShowHidden: Boolean
-        get() = prefs.getBoolean(TEMPORARILY_SHOW_HIDDEN, false)
-        set(temporarilyShowHidden) = prefs.edit().putBoolean(TEMPORARILY_SHOW_HIDDEN, temporarilyShowHidden).apply()
+        get() = temporaryShowHidden || temporaryHiddenOnly
+        set(value) = prefs.edit().putBoolean(TEMPORARILY_SHOW_HIDDEN, value).remove(TEMPORARY_HIDDEN_ONLY).apply()
+
+    fun enableHiddenOnlyWithTemporaryAccess() {
+        prefs.edit().putBoolean(FILTER_HIDDEN_ONLY, true).putBoolean(TEMPORARY_HIDDEN_ONLY, true).apply()
+    }
 
     var temporarilyShowExcluded: Boolean
         get() = prefs.getBoolean(TEMPORARILY_SHOW_EXCLUDED, false)
@@ -379,7 +393,11 @@ class Config(context: Context) : BaseConfig(context) {
 
     var filterHiddenOnly: Boolean
         get() = prefs.getBoolean(FILTER_HIDDEN_ONLY, false)
-        set(filterHiddenOnly) = prefs.edit().putBoolean(FILTER_HIDDEN_ONLY, filterHiddenOnly).apply()
+        set(value) {
+            val edit = prefs.edit().putBoolean(FILTER_HIDDEN_ONLY, value)
+            if (!value) edit.remove(TEMPORARY_HIDDEN_ONLY)
+            edit.apply()
+        }
 
     var dirColumnCnt: Int
         get() = prefs.getInt(getDirectoryColumnsField(), getDefaultDirectoryColumnCount())

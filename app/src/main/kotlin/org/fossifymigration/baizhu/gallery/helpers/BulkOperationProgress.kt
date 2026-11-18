@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.Lifecycle
@@ -20,7 +21,7 @@ import org.fossifymigration.baizhu.gallery.R
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Foreground feedback, not an assertion that an opaque platform operation succeeded. */
+/** Activity-owned work with independent notification feedback while the window is unavailable. */
 class BulkOperationProgress private constructor(
     activity: BaseSimpleActivity,
     private val title: Int,
@@ -29,14 +30,16 @@ class BulkOperationProgress private constructor(
     companion object {
         private const val SHOW_DELAY_MS = 150L
         private const val UPDATE_INTERVAL_MS = 80L
-        private const val BAR_STEPS = 1000
         private var current = WeakReference<BulkOperationProgress>(null)
 
         @Synchronized
         fun begin(activity: BaseSimpleActivity, title: Int, total: Int?): BulkOperationProgress? {
             if (activity.isFinishing || activity.isDestroyed) return null
-            current.get()?.takeUnless { it.isClosed }?.let {
-                it.showAgain()
+            current.get()?.takeUnless { it.isClosed }?.let { operation ->
+                operation.handler.post {
+                    operation.dismissed = false
+                    operation.enqueueRender()
+                }
                 return null
             }
             return BulkOperationProgress(activity, title, total).also { current = WeakReference(it) }
@@ -48,6 +51,7 @@ class BulkOperationProgress private constructor(
 
     private val owner = WeakReference(activity)
     private val handler = Handler(Looper.getMainLooper())
+    private val notification = BulkProgressNotification(activity.applicationContext, handler, title)
     private val closed = AtomicBoolean(false)
     private val originalOrientation = activity.requestedOrientation
     private var dialog: AlertDialog? = null
@@ -67,7 +71,12 @@ class BulkOperationProgress private constructor(
     private val earliestShow = SystemClock.uptimeMillis() + SHOW_DELAY_MS
     private val render = Runnable { renderState() }
     private val lifecycleObserver = LifecycleEventObserver { _, event ->
-        if (event == Lifecycle.Event.ON_DESTROY) finish()
+        when (event) {
+            Lifecycle.Event.ON_START, Lifecycle.Event.ON_RESUME -> enqueueRender()
+            Lifecycle.Event.ON_STOP -> detachDialog()
+            Lifecycle.Event.ON_DESTROY -> finish()
+            else -> Unit
+        }
     }
 
     val isClosed: Boolean get() = closed.get() || owner.get() == null
@@ -77,7 +86,7 @@ class BulkOperationProgress private constructor(
         // Legacy storage permission callbacks belong to this activity. Restore its prior policy afterwards.
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
         GalleryPresentationChangeWatch.markChanged()
-        handler.postDelayed(render, SHOW_DELAY_MS)
+        enqueueRender()
     }
 
     @Synchronized
@@ -120,10 +129,8 @@ class BulkOperationProgress private constructor(
         if (!closed.compareAndSet(false, true)) return
         val cleanup = Runnable {
             handler.removeCallbacks(render)
-            dialog?.dismiss()
-            dialog = null
-            bar = null
-            description = null
+            notification.clear()
+            detachDialog()
             owner.get()?.let {
                 it.lifecycle.removeObserver(lifecycleObserver)
                 if (!it.isDestroyed) it.requestedOrientation = originalOrientation
@@ -139,22 +146,10 @@ class BulkOperationProgress private constructor(
     fun showPrompt(visible: Boolean) {
         val update = Runnable {
             promptVisible = visible
-            if (visible) {
-                handler.removeCallbacks(render)
-                dialog?.hide()
-            } else if (!isClosed && !dismissed) {
-                dialog?.show()
-                enqueueRender()
-            }
-        }
-        if (Looper.myLooper() == Looper.getMainLooper()) update.run() else handler.post(update)
-    }
-
-    private fun showAgain() {
-        handler.post {
-            dismissed = false
+            if (visible) detachDialog()
             enqueueRender()
         }
+        if (Looper.myLooper() == Looper.getMainLooper()) update.run() else handler.post(update)
     }
 
     private fun enqueueRender() {
@@ -167,36 +162,49 @@ class BulkOperationProgress private constructor(
     @Synchronized
     private fun renderState() {
         val activity = owner.get() ?: return
-        val inactive = isClosed || dismissed || promptVisible
-        if (inactive || activity.isFinishing || activity.isDestroyed) return
-        if (!activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            handler.postDelayed(render, UPDATE_INTERVAL_MS)
-            return
-        }
-        if (dialog == null) createDialog(activity)
+        if (isClosed || activity.isFinishing || activity.isDestroyed) return
         lastRender = SystemClock.uptimeMillis()
-        bar?.isIndeterminate = !determinate
-        if (determinate) bar?.progress = progressValue().coerceIn(0, BAR_STEPS)
+        val display = display(activity)
+        val backgroundDisplay = if (promptVisible) {
+            display.waitingForInput(activity.getString(R.string.bulk_waiting_input))
+        } else display
+        notification.update(backgroundDisplay)
+        val started = activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        if (!needsBulkProgressDialog(started, dismissed, promptVisible)) return
+        if (dialog == null) createDialog(activity)
+        bar?.isIndeterminate = display.value == null
+        display.value?.let { bar?.progress = it }
+        val note = activity.getString(R.string.bulk_progress_note)
+        val hint = if (notification.canShow()) {
+            R.string.bulk_progress_notification_hint
+        } else R.string.bulk_progress_notification_disabled
+        val minimizedHint = activity.getString(hint)
+        description?.text = listOf(display.phase, display.counts, display.bytes, note, minimizedHint)
+            .filter(String::isNotEmpty).joinToString("\n")
+    }
+
+    private fun display(activity: BaseSimpleActivity): BulkProgressDisplay {
         val count = total?.let { activity.getString(R.string.bulk_items_processed, completed, it, failed) }.orEmpty()
         val byteText = bytesTotal?.let {
             activity.getString(R.string.bulk_current_file_bytes, (bytesDone ?: 0L).formatSize(), it.formatSize())
         }.orEmpty()
-        val note = activity.getString(R.string.bulk_progress_note)
-        description?.text = listOf(phaseText, count, byteText, note).filter { it.isNotEmpty() }.joinToString("\n")
+        val value = bulkProgressValue(determinate, bytesDone ?: completed.toLong(), bytesTotal ?: total?.toLong() ?: 0L)
+        return BulkProgressDisplay(phaseText, count, byteText, value)
     }
 
-    private fun progressValue(): Int {
-        val byteMaximum = bytesTotal
-        return if (byteMaximum != null && byteMaximum > 0) {
-            ((bytesDone ?: 0).toDouble() / byteMaximum * BAR_STEPS).toInt()
-        } else if (total != null && total > 0) {
-            (completed.toDouble() / total * BAR_STEPS).toInt()
-        } else 0
+    private fun detachDialog() {
+        dialog?.dismiss()
+        dialog = null
+        bar = null
+        description = null
     }
 
     private fun createDialog(activity: BaseSimpleActivity) {
         val builder = activity.getAlertDialogBuilder()
-            .setNeutralButton(R.string.bulk_hide_progress) { _, _ -> dismissed = true }
+            .setNeutralButton(R.string.bulk_hide_progress) { _, _ ->
+                dismissed = true
+                detachDialog()
+            }
         val themedContext = builder.context
         val palette = progressPalette(activity, builder)
         val spacing = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
@@ -206,11 +214,12 @@ class BulkOperationProgress private constructor(
         }
         description = TextView(themedContext).also { content.addView(it) }
         bar = ProgressBar(themedContext, null, android.R.attr.progressBarStyleHorizontal).also {
-            it.max = BAR_STEPS
+            it.max = BULK_PROGRESS_STEPS
             content.addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = spacing })
         }
-        activity.setupDialogStuff(content, builder, titleId = title, cancelOnTouchOutside = false) {
+        val scroll = ScrollView(themedContext).apply { addView(content) }
+        activity.setupDialogStuff(scroll, builder, titleId = title, cancelOnTouchOutside = false) {
             description?.setTextColor(palette.text)
             bar?.let(palette::apply)
             it.getButton(DialogInterface.BUTTON_NEUTRAL)?.setTextColor(palette.text)

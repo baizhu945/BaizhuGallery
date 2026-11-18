@@ -99,6 +99,10 @@ class SettingsActivity : SimpleActivity() {
         setupHideExtendedDetails()
         setupManageExtendedDetails()
         setupSkipDeleteConfirmation()
+        binding.settingsBulkProgressNotifications.setOnClickListener {
+            ensureBulkProgressChannel(applicationContext)
+            launchCustomizeNotificationsIntent()
+        }
         setupManageBottomActions()
         setupUseRecycleBin()
         setupShowRecycleBin()
